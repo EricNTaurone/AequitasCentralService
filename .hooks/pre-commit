@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[pre-commit] Formatting sources with Spotless"
+./mvnw -q spotless:apply
+
+echo "[pre-commit] Running full verification suite"
+./mvnw -q verify

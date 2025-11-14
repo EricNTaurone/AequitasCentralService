@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:6543/aequitas_central
+    username: aequitas
+    password: aequitas
+  jpa:
+    show-sql: true
+outbox:
+  relay-interval: PT2S
