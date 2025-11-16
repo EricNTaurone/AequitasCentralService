@@ -1,12 +1,15 @@
 package com.aequitas.aequitascentralservice.domain.event;
 
-import com.aequitas.aequitascentralservice.domain.model.TimeEntry;
-import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import com.aequitas.aequitascentralservice.domain.model.TimeEntry;
+import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
+
+import lombok.Builder;
 
 /**
  * Canonical payload emitted when an entry transitions to APPROVED.
@@ -16,6 +19,7 @@ import java.util.UUID;
  * @param firmId tenant identifier to group FIFO delivery.
  * @param payload event payload flattened into a JSON-friendly map.
  */
+@Builder
 public record EntryApprovedEvent(
         UUID eventId, Instant occurredAt, UUID firmId, Map<String, Object> payload)
         implements DomainEvent {

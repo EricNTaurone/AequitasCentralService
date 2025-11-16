@@ -1,0 +1,741 @@
+openapi: 3.0.3
+info:
+  title: Aequitas Central Service API
+  description: |
+    REST API for managing time entries and user profiles within a multi-tenant legal timekeeping SaaS platform.
+    
+    This API follows hexagonal architecture principles and enforces tenant-level data isolation.
+    All operations are scoped to the authenticated tenant context.
+    
+    ## Authentication
+    All endpoints require authentication via OAuth2/JWT tokens. The security context provides
+    tenant identification and role-based access control.
+    
+    ## Idempotency
+    Mutation endpoints support optional `Idempotency-Key` headers to prevent duplicate operations
+    caused by client retries. Keys should be UUIDs and are scoped to tenant + operation type.
+    
+    ## Pagination
+    List endpoints use cursor-based pagination for stable iteration over large result sets.
+  version: 0.1.0
+  contact:
+    name: Aequitas Engineering
+    url: https://example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.aequitas.example.com
+    description: Production server
+
+tags:
+  - name: Time Entries
+    description: Operations for creating, updating, and managing time entries
+  - name: User Profiles
+    description: Operations for managing user profiles and role assignments
+
+paths:
+  /api/v1/entries:
+    post:
+      tags:
+        - Time Entries
+      summary: Create a new time entry
+      description: |
+        Creates a new time entry in DRAFT status within the authenticated tenant's workspace.
+        
+        This operation is idempotent when an `Idempotency-Key` header is supplied. If the same key
+        is reused, the original entry's identifier is returned without creating a duplicate.
+      operationId: createTimeEntry
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Optional client-supplied UUID for idempotency protection
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimeEntryRequest'
+      responses:
+        '201':
+          description: Time entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+      security:
+        - oauth2: []
+
+    get:
+      tags:
+        - Time Entries
+      summary: Search time entries
+      description: |
+        Retrieves a paginated list of time entries within the authenticated tenant,
+        optionally filtered by customer, project, status, and owner.
+        
+        Uses cursor-based pagination for stable iteration over large result sets.
+      operationId: searchTimeEntries
+      parameters:
+        - name: customerId
+          in: query
+          description: Filter by customer identifier
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: query
+          description: Filter by project identifier
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Filter by entry status
+          required: false
+          schema:
+            $ref: '#/components/schemas/EntryStatus'
+        - name: ownerId
+          in: query
+          description: Filter by owner identifier (managers only)
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Maximum number of items to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor from previous response
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful search operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryPageResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+      security:
+        - oauth2: []
+
+  /api/v1/entries/{id}:
+    get:
+      tags:
+        - Time Entries
+      summary: Get time entry by ID
+      description: Retrieves a single time entry by its unique identifier
+      operationId: getTimeEntryById
+      parameters:
+        - name: id
+          in: path
+          description: Time entry identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Time entry found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+        '404':
+          description: Time entry not found
+      security:
+        - oauth2: []
+
+    patch:
+      tags:
+        - Time Entries
+      summary: Update time entry
+      description: |
+        Applies a partial update to an existing time entry.
+        
+        Only mutable fields can be updated. The entry must be in DRAFT status;
+        submitted or approved entries cannot be modified.
+      operationId: updateTimeEntry
+      parameters:
+        - name: id
+          in: path
+          description: Time entry identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTimeEntryRequest'
+      responses:
+        '204':
+          description: Time entry updated successfully
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+        '404':
+          description: Time entry not found
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - oauth2: []
+
+  /api/v1/entries/{id}/submit:
+    post:
+      tags:
+        - Time Entries
+      summary: Submit time entry for approval
+      description: |
+        Submits a time entry for managerial approval, transitioning it from DRAFT to SUBMITTED status.
+        
+        Once submitted, the entry becomes immutable and cannot be updated.
+      operationId: submitTimeEntry
+      parameters:
+        - name: id
+          in: path
+          description: Time entry identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Time entry submitted successfully
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+        '404':
+          description: Time entry not found
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - oauth2: []
+
+  /api/v1/entries/{id}/approve:
+    post:
+      tags:
+        - Time Entries
+      summary: Approve time entry
+      description: |
+        Approves a submitted time entry, transitioning it to APPROVED status and making it
+        eligible for payroll or billing processing.
+        
+        This operation is idempotent when an `Idempotency-Key` header is supplied.
+      operationId: approveTimeEntry
+      parameters:
+        - name: id
+          in: path
+          description: Time entry identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          description: Optional client-supplied UUID for idempotency protection
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Time entry approved successfully
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions (requires manager/admin role)
+        '404':
+          description: Time entry not found
+        '409':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - oauth2: []
+
+  /api/v1/users/me:
+    get:
+      tags:
+        - User Profiles
+      summary: Get authenticated user's profile
+      description: |
+        Retrieves the authenticated user's own profile, including identity, role,
+        tenant membership, and contact information.
+        
+        Accessible by all authenticated users regardless of role.
+      operationId: getCurrentUserProfile
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+      security:
+        - oauth2: []
+
+  /api/v1/users:
+    get:
+      tags:
+        - User Profiles
+      summary: List user profiles
+      description: |
+        Lists all user profiles within the authenticated tenant's firm,
+        optionally filtered by role.
+        
+        Only accessible by users with MANAGER or ADMIN roles.
+      operationId: listUserProfiles
+      parameters:
+        - name: role
+          in: query
+          description: Filter by user role
+          required: false
+          schema:
+            $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: User profiles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions (requires manager/admin role)
+      security:
+        - oauth2: []
+
+  /api/v1/users/{id}/role:
+    patch:
+      tags:
+        - User Profiles
+      summary: Update user role
+      description: |
+        Updates a user's role assignment within the tenant.
+        
+        Only accessible by users with ADMIN role. Cannot demote the last ADMIN.
+      operationId: updateUserRole
+      parameters:
+        - name: id
+          in: path
+          description: User identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRoleRequest'
+      responses:
+        '204':
+          description: User role updated successfully
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions (requires admin role)
+        '404':
+          description: User not found
+        '409':
+          description: Cannot demote last admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - oauth2: []
+
+components:
+  schemas:
+    CreateTimeEntryRequest:
+      type: object
+      required:
+        - customerId
+        - projectId
+        - narrative
+        - durationMinutes
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: Customer identifier
+        projectId:
+          type: string
+          format: uuid
+          description: Project identifier
+        matterId:
+          type: string
+          format: uuid
+          description: Linked matter identifier (optional)
+          nullable: true
+        narrative:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description: Textual narrative describing the work performed
+        durationMinutes:
+          type: integer
+          minimum: 1
+          description: Duration in minutes
+      example:
+        customerId: "550e8400-e29b-41d4-a716-446655440000"
+        projectId: "660e8400-e29b-41d4-a716-446655440001"
+        matterId: "770e8400-e29b-41d4-a716-446655440002"
+        narrative: "Reviewed contract terms and drafted amendments"
+        durationMinutes: 120
+
+    UpdateTimeEntryRequest:
+      type: object
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: Optional customer identifier
+          nullable: true
+        projectId:
+          type: string
+          format: uuid
+          description: Optional project identifier
+          nullable: true
+        matterId:
+          type: string
+          format: uuid
+          description: Optional matter identifier
+          nullable: true
+        narrative:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description: Optional narrative override
+          nullable: true
+        durationMinutes:
+          type: integer
+          minimum: 1
+          description: Optional duration in minutes
+          nullable: true
+      example:
+        narrative: "Updated contract review notes"
+        durationMinutes: 150
+
+    TimeEntryResponse:
+      type: object
+      required:
+        - id
+        - customerId
+        - projectId
+        - userId
+        - narrative
+        - durationMinutes
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Entry identifier
+        customerId:
+          type: string
+          format: uuid
+          description: Customer identifier
+        projectId:
+          type: string
+          format: uuid
+          description: Project identifier
+        matterId:
+          type: string
+          format: uuid
+          description: Matter identifier
+          nullable: true
+        userId:
+          type: string
+          format: uuid
+          description: Owner identifier
+        narrative:
+          type: string
+          description: Work narrative
+        durationMinutes:
+          type: integer
+          description: Duration in minutes
+        status:
+          $ref: '#/components/schemas/EntryStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        approvedAt:
+          type: string
+          format: date-time
+          description: Approval timestamp
+          nullable: true
+      example:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        customerId: "660e8400-e29b-41d4-a716-446655440001"
+        projectId: "770e8400-e29b-41d4-a716-446655440002"
+        matterId: "880e8400-e29b-41d4-a716-446655440003"
+        userId: "990e8400-e29b-41d4-a716-446655440004"
+        narrative: "Reviewed contract terms"
+        durationMinutes: 120
+        status: "DRAFT"
+        createdAt: "2025-11-15T10:30:00Z"
+        updatedAt: "2025-11-15T11:00:00Z"
+        approvedAt: null
+
+    TimeEntryPageResponse:
+      type: object
+      required:
+        - items
+        - total
+        - hasMore
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeEntryResponse'
+          description: List of time entries
+        nextCursor:
+          type: string
+          description: Opaque cursor for the next page
+          nullable: true
+        total:
+          type: integer
+          format: int64
+          description: Total number of items
+        hasMore:
+          type: boolean
+          description: Whether additional pages exist
+      example:
+        items:
+          - id: "550e8400-e29b-41d4-a716-446655440000"
+            customerId: "660e8400-e29b-41d4-a716-446655440001"
+            projectId: "770e8400-e29b-41d4-a716-446655440002"
+            matterId: null
+            userId: "990e8400-e29b-41d4-a716-446655440004"
+            narrative: "Contract review"
+            durationMinutes: 120
+            status: "DRAFT"
+            createdAt: "2025-11-15T10:30:00Z"
+            updatedAt: "2025-11-15T11:00:00Z"
+            approvedAt: null
+        nextCursor: "eyJpZCI6IjU1MGU4NDAwIn0="
+        total: 150
+        hasMore: true
+
+    UserProfileResponse:
+      type: object
+      required:
+        - id
+        - firmId
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User identifier
+        firmId:
+          type: string
+          format: uuid
+          description: Tenant identifier
+        email:
+          type: string
+          format: email
+          description: Email address
+        role:
+          $ref: '#/components/schemas/Role'
+      example:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        firmId: "660e8400-e29b-41d4-a716-446655440001"
+        email: "john.doe@example.com"
+        role: "EMPLOYEE"
+
+    UpdateUserRoleRequest:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+      example:
+        role: "MANAGER"
+
+    IdResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Generated identifier
+      example:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+
+    EntryStatus:
+      type: string
+      enum:
+        - DRAFT
+        - SUBMITTED
+        - APPROVED
+      description: |
+        Lifecycle status of a time entry:
+        * `DRAFT` - Entry is editable and not yet submitted
+        * `SUBMITTED` - Entry awaits manager review
+        * `APPROVED` - Entry is immutable and ready for export
+
+    Role:
+      type: string
+      enum:
+        - EMPLOYEE
+        - MANAGER
+        - ADMIN
+      description: |
+        RBAC role within a firm:
+        * `EMPLOYEE` - Individual contributor with access to own entries only
+        * `MANAGER` - People lead who may manage subordinate time entries
+        * `ADMIN` - Firm administrator with full access inside the tenant
+
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error occurrence timestamp
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: HTTP status message
+        message:
+          type: string
+          description: Detailed error message
+        path:
+          type: string
+          description: Request path that caused the error
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+          description: Field-level validation errors (for 400 responses)
+      example:
+        timestamp: "2025-11-15T10:30:00Z"
+        status: 400
+        error: "Bad Request"
+        message: "Validation failed"
+        path: "/api/v1/entries"
+        errors:
+          - field: "narrative"
+            message: "must not be blank"
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth2 authentication with JWT tokens
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.aequitas.example.com/oauth/authorize
+          tokenUrl: https://auth.aequitas.example.com/oauth/token
+          scopes:
+            read: Read access to resources
+            write: Write access to resources
+
+security:
+  - oauth2: []

@@ -1,30 +1,32 @@
 package com.aequitas.aequitascentralservice.adapter.web;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import com.aequitas.aequitascentralservice.adapter.web.dto.UpdateUserRoleRequest;
-import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileCommandPort;
-import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileQueryPort;
-import com.aequitas.aequitascentralservice.domain.model.UserProfile;
-import com.aequitas.aequitascentralservice.domain.value.Role;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateUserRoleRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UserProfileResponse;
+import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileCommandPort;
+import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileQueryPort;
+import com.aequitas.aequitascentralservice.domain.model.UserProfile;
+import com.aequitas.aequitascentralservice.domain.value.Role;
 
 @ExtendWith(MockitoExtension.class)
 class UserProfileControllerTest {
@@ -33,17 +35,17 @@ class UserProfileControllerTest {
     private static final UUID FIRM_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final String EMAIL = "user@example.com";
 
-    @Mock private UserProfileQueryPort queryPort;
-    @Mock private UserProfileCommandPort commandPort;
+    @Mock
+    private UserProfileQueryPort queryPort;
 
-    @Captor private ArgumentCaptor<Optional<Role>> roleCaptor;
+    @Mock
+    private UserProfileCommandPort commandPort;
 
+    @Captor
+    private ArgumentCaptor<Optional<Role>> roleCaptor;
+
+    @InjectMocks
     private UserProfileController controller;
-
-    @BeforeEach
-    void setUp() {
-        controller = new UserProfileController(queryPort, commandPort, new UserProfileDtoMapper());
-    }
 
     @Test
     void GIVEN_authenticatedUser_WHEN_me_THEN_returnsOwnProfile() {
@@ -52,14 +54,17 @@ class UserProfileControllerTest {
         when(queryPort.me()).thenReturn(profile);
 
         // WHEN
-        ResponseEntity<com.aequitas.aequitascentralservice.adapter.web.dto.UserProfileResponse> response =
-                controller.me();
+        ResponseEntity<UserProfileResponse> response = controller.me();
 
         // THEN
+        assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(profile.id(), response.getBody().id());
-        assertEquals(profile.role(), response.getBody().role());
+        assertEquals(USER_ID, response.getBody().getId());
+        assertEquals(FIRM_ID, response.getBody().getFirmId());
+        assertEquals(EMAIL, response.getBody().getEmail());
+        assertEquals(com.aequitas.aequitascentralservice.adapter.web.generated.dto.Role.MANAGER,
+                response.getBody().getRole());
         verify(queryPort, times(1)).me();
         verifyNoMoreInteractions(queryPort, commandPort);
     }
@@ -71,12 +76,18 @@ class UserProfileControllerTest {
         when(queryPort.list(Optional.of(Role.MANAGER))).thenReturn(List.of(profile));
 
         // WHEN
-        ResponseEntity<List<com.aequitas.aequitascentralservice.adapter.web.dto.UserProfileResponse>> response =
-                controller.list("manager");
+        ResponseEntity<List<UserProfileResponse>> response = controller.list("manager");
 
         // THEN
+        assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
+        assertEquals(USER_ID, response.getBody().get(0).getId());
+        assertEquals(FIRM_ID, response.getBody().get(0).getFirmId());
+        assertEquals(EMAIL, response.getBody().get(0).getEmail());
+        assertEquals(com.aequitas.aequitascentralservice.adapter.web.generated.dto.Role.MANAGER,
+                response.getBody().get(0).getRole());
         verify(queryPort, times(1)).list(roleCaptor.capture());
         assertEquals(Optional.of(Role.MANAGER), roleCaptor.getValue());
         verifyNoMoreInteractions(queryPort, commandPort);
@@ -90,19 +101,23 @@ class UserProfileControllerTest {
                 assertThrows(IllegalArgumentException.class, () -> controller.list("invalid-role"));
 
         // THEN
-        assertEquals("No enum constant com.aequitas.aequitascentralservice.domain.value.Role.INVALID-ROLE", exception.getMessage());
+        assertNotNull(exception);
+        assertEquals("No enum constant com.aequitas.aequitascentralservice.domain.value.Role.INVALID-ROLE",
+                exception.getMessage());
         verifyNoMoreInteractions(queryPort, commandPort);
     }
 
     @Test
     void GIVEN_adminRequest_WHEN_updateRole_THEN_commandPortInvoked() {
         // GIVEN
-        UpdateUserRoleRequest request = new UpdateUserRoleRequest(Role.ADMIN);
+        UpdateUserRoleRequest request = new UpdateUserRoleRequest();
+        request.setRole(com.aequitas.aequitascentralservice.adapter.web.generated.dto.Role.ADMIN);
 
         // WHEN
         ResponseEntity<Void> response = controller.updateRole(USER_ID, request);
 
         // THEN
+        assertNotNull(response);
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(commandPort, times(1)).updateRole(USER_ID, Role.ADMIN);
         verifyNoMoreInteractions(queryPort, commandPort);

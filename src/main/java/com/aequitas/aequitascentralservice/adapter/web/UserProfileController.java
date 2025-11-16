@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.aequitas.aequitascentralservice.adapter.web.dto.UpdateUserRoleRequest;
-import com.aequitas.aequitascentralservice.adapter.web.dto.UserProfileResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateUserRoleRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UserProfileResponse;
 import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileCommandPort;
 import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileQueryPort;
 import com.aequitas.aequitascentralservice.domain.value.Role;
@@ -80,12 +80,6 @@ public class UserProfileController {
     private final UserProfileCommandPort commandPort;
 
     /**
-     * Mapper converting between web‑layer DTOs and domain models.
-     * Injected by Spring; never null.
-     */
-    private final UserProfileDtoMapper mapper;
-
-    /**
      * Constructs a new controller with required hexagonal ports and supporting services.
      *
      * <p>All dependencies are injected by Spring's constructor‑based dependency injection. This
@@ -94,15 +88,12 @@ public class UserProfileController {
      *
      * @param queryPort   Port for executing user profile queries; must not be null.
      * @param commandPort Port for executing user profile mutations; must not be null.
-     * @param mapper      Mapper for DTO ↔ domain conversions; must not be null.
      */
     public UserProfileController(
             final UserProfileQueryPort queryPort,
-            final UserProfileCommandPort commandPort,
-            final UserProfileDtoMapper mapper) {
+            final UserProfileCommandPort commandPort) {
         this.queryPort = queryPort;
         this.commandPort = commandPort;
-        this.mapper = mapper;
     }
 
     /**
@@ -132,7 +123,7 @@ public class UserProfileController {
      */
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> me() {
-        return ResponseEntity.ok(mapper.toResponse(queryPort.me()));
+        return ResponseEntity.ok(UserProfileDtoMapper.toResponse(queryPort.me()));
     }
 
     /**
@@ -180,7 +171,7 @@ public class UserProfileController {
             @RequestParam(name = "role", required = false) final String role) {
         final Optional<Role> parsedRole = parseRole(role);
         final List<UserProfileResponse> response =
-                queryPort.list(parsedRole).stream().map(mapper::toResponse).toList();
+                queryPort.list(parsedRole).stream().map(UserProfileDtoMapper::toResponse).toList();
         return ResponseEntity.ok(response);
     }
 
@@ -226,7 +217,7 @@ public class UserProfileController {
     @PatchMapping("/{id}/role")
     public ResponseEntity<Void> updateRole(
             @PathVariable final UUID id, @Valid @RequestBody final UpdateUserRoleRequest request) {
-        commandPort.updateRole(id, request.role());
+        commandPort.updateRole(id, Role.valueOf(request.getRole().name()));
         return ResponseEntity.noContent().build();
     }
 

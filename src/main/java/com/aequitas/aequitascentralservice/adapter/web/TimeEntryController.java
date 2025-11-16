@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.aequitas.aequitascentralservice.adapter.web.dto.CreateTimeEntryRequest;
-import com.aequitas.aequitascentralservice.adapter.web.dto.IdResponse;
 import com.aequitas.aequitascentralservice.adapter.web.dto.PageResponse;
-import com.aequitas.aequitascentralservice.adapter.web.dto.TimeEntryResponse;
-import com.aequitas.aequitascentralservice.adapter.web.dto.UpdateTimeEntryRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.CreateTimeEntryRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.IdResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateTimeEntryRequest;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryCommandPort;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryQueryPort;
 import com.aequitas.aequitascentralservice.app.service.IdempotencyService;
@@ -85,12 +85,6 @@ public class TimeEntryController {
     private final TimeEntryQueryPort queryPort;
 
     /**
-     * Mapper converting between web‑layer DTOs and domain commands/models.
-     * Injected by Spring; never null.
-     */
-    private final TimeEntryDtoMapper mapper;
-
-    /**
      * Service enforcing idempotency semantics for mutation operations using client‑supplied keys.
      * Injected by Spring; never null.
      */
@@ -105,17 +99,14 @@ public class TimeEntryController {
      *
      * @param commandPort   Port for executing time entry mutations; must not be null.
      * @param queryPort     Port for executing time entry queries; must not be null.
-     * @param mapper        Mapper for DTO ↔ domain conversions; must not be null.
      * @param idempotencyService Service managing idempotency keys; must not be null.
      */
     public TimeEntryController(
             final TimeEntryCommandPort commandPort,
             final TimeEntryQueryPort queryPort,
-            final TimeEntryDtoMapper mapper,
             final IdempotencyService idempotencyService) {
         this.commandPort = commandPort;
         this.queryPort = queryPort;
-        this.mapper = mapper;
         this.idempotencyService = idempotencyService;
     }
 
@@ -154,7 +145,7 @@ public class TimeEntryController {
                 idempotencyService.execute(
                         idempotencyKey,
                         IdempotencyOperation.TIME_ENTRY_CREATE,
-                        () -> commandPort.create(mapper.toCommand(request)));
+                        () -> commandPort.create(TimeEntryDtoMapper.toCommand(request)));
         return ResponseEntity.status(HttpStatus.CREATED).body(new IdResponse(id));
     }
 
@@ -188,7 +179,7 @@ public class TimeEntryController {
     @PatchMapping("/{id}")
     public ResponseEntity<Void> update(
             @PathVariable final UUID id, @Valid @RequestBody final UpdateTimeEntryRequest request) {
-        commandPort.update(id, mapper.toCommand(request));
+        commandPort.update(id, TimeEntryDtoMapper.toCommand(request));
         return ResponseEntity.noContent().build();
     }
 
@@ -287,7 +278,7 @@ public class TimeEntryController {
     @GetMapping("/{id}")
     public ResponseEntity<TimeEntryResponse> findById(@PathVariable final UUID id) {
         return queryPort.findById(id)
-                .map(mapper::toResponse)
+                .map(TimeEntryDtoMapper::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -358,7 +349,7 @@ public class TimeEntryController {
                         Optional.ofNullable(ownerId));
         final PageRequest pageRequest = new PageRequest(limit, cursor);
         final var page = queryPort.search(filter, pageRequest);
-        final var responseItems = page.items().stream().map(mapper::toResponse).toList();
+        final var responseItems = page.items().stream().map(TimeEntryDtoMapper::toResponse).toList();
         final PageResponse<TimeEntryResponse> response =
                 new PageResponse<>(responseItems, page.nextCursor(), page.totalItems(), page.hasMore());
         return ResponseEntity.ok(response);

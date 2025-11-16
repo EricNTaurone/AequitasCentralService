@@ -7,3 +7,6 @@ spring:
     show-sql: true
 outbox:
   relay-interval: PT2S
+logging:
+  level:
+    '[org.hibernate.sql]': WARN

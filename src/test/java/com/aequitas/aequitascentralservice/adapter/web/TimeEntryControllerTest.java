@@ -1,21 +1,36 @@
 package com.aequitas.aequitascentralservice.adapter.web;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Supplier;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import com.aequitas.aequitascentralservice.adapter.web.dto.CreateTimeEntryRequest;
-import com.aequitas.aequitascentralservice.adapter.web.dto.IdResponse;
 import com.aequitas.aequitascentralservice.adapter.web.dto.PageResponse;
-import com.aequitas.aequitascentralservice.adapter.web.dto.TimeEntryResponse;
-import com.aequitas.aequitascentralservice.adapter.web.dto.UpdateTimeEntryRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.CreateTimeEntryRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.IdResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateTimeEntryRequest;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryCommandPort;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryQueryPort;
 import com.aequitas.aequitascentralservice.app.service.IdempotencyService;
@@ -27,20 +42,6 @@ import com.aequitas.aequitascentralservice.domain.pagination.PageRequest;
 import com.aequitas.aequitascentralservice.domain.pagination.PageResult;
 import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
 import com.aequitas.aequitascentralservice.domain.value.IdempotencyOperation;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Supplier;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)
 class TimeEntryControllerTest {
@@ -58,35 +59,40 @@ class TimeEntryControllerTest {
     private static final int UPDATED_DURATION = 60;
     private static final String CURSOR = "cursor-1";
 
-    @Mock private TimeEntryCommandPort commandPort;
-    @Mock private TimeEntryQueryPort queryPort;
-    @Mock private IdempotencyService idempotencyService;
+    @Mock
+    private TimeEntryCommandPort commandPort;
+    @Mock
+    private TimeEntryQueryPort queryPort;
+    @Mock
+    private IdempotencyService idempotencyService;
 
-    @Captor private ArgumentCaptor<CreateTimeEntryCommand> createCommandCaptor;
-    @Captor private ArgumentCaptor<UpdateTimeEntryCommand> updateCommandCaptor;
-    @Captor private ArgumentCaptor<Supplier<UUID>> supplierCaptor;
-    @Captor private ArgumentCaptor<TimeEntryFilter> filterCaptor;
-    @Captor private ArgumentCaptor<PageRequest> pageRequestCaptor;
+    @Captor
+    private ArgumentCaptor<CreateTimeEntryCommand> createCommandCaptor;
+    @Captor
+    private ArgumentCaptor<UpdateTimeEntryCommand> updateCommandCaptor;
+    @Captor
+    private ArgumentCaptor<Supplier<UUID>> supplierCaptor;
+    @Captor
+    private ArgumentCaptor<TimeEntryFilter> filterCaptor;
+    @Captor
+    private ArgumentCaptor<PageRequest> pageRequestCaptor;
 
+    @InjectMocks
     private TimeEntryController controller;
-
-    @BeforeEach
-    void setUp() {
-        controller = new TimeEntryController(commandPort, queryPort, new TimeEntryDtoMapper(), idempotencyService);
-    }
 
     @Test
     void GIVEN_validCreateRequest_WHEN_create_THEN_returnsIdentifierAndPersists() {
         // GIVEN
-        CreateTimeEntryRequest request =
-                new CreateTimeEntryRequest(CUSTOMER_ID, PROJECT_ID, MATTER_ID, NARRATIVE, DURATION);
+        CreateTimeEntryRequest request = new CreateTimeEntryRequest(CUSTOMER_ID, PROJECT_ID, NARRATIVE, DURATION);
+        request.setMatterId(MATTER_ID);
         when(commandPort.create(createCommandCaptor.capture())).thenReturn(ENTRY_ID);
         doAnswer(invocation -> {
-                    Supplier<UUID> supplier = invocation.getArgument(2);
-                    return supplier.get();
-                })
+            Supplier<UUID> supplier = invocation.getArgument(2);
+            return supplier.get();
+        })
                 .when(idempotencyService)
-                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_CREATE), org.mockito.ArgumentMatchers.any());
+                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_CREATE),
+                        org.mockito.ArgumentMatchers.any());
 
         // WHEN
         ResponseEntity<IdResponse> response = controller.create(IDEMPOTENCY_KEY, request);
@@ -94,7 +100,7 @@ class TimeEntryControllerTest {
         // THEN
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(ENTRY_ID, response.getBody().id());
+        assertEquals(ENTRY_ID, response.getBody().getId());
         CreateTimeEntryCommand command = createCommandCaptor.getValue();
         assertEquals(CUSTOMER_ID, command.customerId());
         assertEquals(PROJECT_ID, command.projectId());
@@ -111,8 +117,12 @@ class TimeEntryControllerTest {
     @Test
     void GIVEN_patchPayload_WHEN_update_THEN_commandPortReceivesMappedCommand() {
         // GIVEN
-        UpdateTimeEntryRequest request =
-                new UpdateTimeEntryRequest(CUSTOMER_ID, PROJECT_ID, MATTER_ID, UPDATED_NARRATIVE, UPDATED_DURATION);
+        UpdateTimeEntryRequest request = new UpdateTimeEntryRequest();
+        request.setCustomerId(CUSTOMER_ID);
+        request.setProjectId(PROJECT_ID);
+        request.setMatterId(MATTER_ID);
+        request.setNarrative(UPDATED_NARRATIVE);
+        request.setDurationMinutes(UPDATED_DURATION);
 
         // WHEN
         ResponseEntity<Void> response = controller.update(ENTRY_ID, request);
@@ -147,11 +157,12 @@ class TimeEntryControllerTest {
     void GIVEN_approvalRequest_WHEN_approve_THEN_idempotencyServiceAndCommandPortInvoked() {
         // GIVEN
         doAnswer(invocation -> {
-                    Supplier<UUID> supplier = invocation.getArgument(2);
-                    return supplier.get();
-                })
+            Supplier<UUID> supplier = invocation.getArgument(2);
+            return supplier.get();
+        })
                 .when(idempotencyService)
-                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_APPROVE), org.mockito.ArgumentMatchers.any());
+                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_APPROVE),
+                        org.mockito.ArgumentMatchers.any());
 
         // WHEN
         ResponseEntity<Void> response = controller.approve(ENTRY_ID, IDEMPOTENCY_KEY);
@@ -177,7 +188,7 @@ class TimeEntryControllerTest {
         // THEN
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(entry.id(), response.getBody().id());
+        assertEquals(entry.id(), response.getBody().getId());
         verify(queryPort, times(1)).findById(entry.id());
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
     }
@@ -204,8 +215,8 @@ class TimeEntryControllerTest {
         when(queryPort.search(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(page);
 
         // WHEN
-        ResponseEntity<PageResponse<TimeEntryResponse>> response =
-                controller.search(CUSTOMER_ID, PROJECT_ID, "submitted", USER_ID, 25, CURSOR);
+        ResponseEntity<PageResponse<TimeEntryResponse>> response = controller.search(CUSTOMER_ID, PROJECT_ID,
+                "submitted", USER_ID, 25, CURSOR);
 
         // THEN
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -229,10 +240,9 @@ class TimeEntryControllerTest {
     void GIVEN_invalidStatus_WHEN_search_THEN_exceptionRaised() {
         // GIVEN
         // WHEN
-        IllegalArgumentException exception =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> controller.search(null, null, "bad", null, 10, null));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> controller.search(null, null, "bad", null, 10, null));
 
         // THEN
         assertEquals(

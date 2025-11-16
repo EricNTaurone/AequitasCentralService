@@ -1,18 +1,21 @@
 package com.aequitas.aequitascentralservice.adapter.web;
 
-import com.aequitas.aequitascentralservice.adapter.web.dto.CreateTimeEntryRequest;
-import com.aequitas.aequitascentralservice.adapter.web.dto.TimeEntryResponse;
-import com.aequitas.aequitascentralservice.adapter.web.dto.UpdateTimeEntryRequest;
+import java.util.Optional;
+
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.CreateTimeEntryRequest;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.EntryStatus;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateTimeEntryRequest;
 import com.aequitas.aequitascentralservice.domain.command.CreateTimeEntryCommand;
 import com.aequitas.aequitascentralservice.domain.command.UpdateTimeEntryCommand;
 import com.aequitas.aequitascentralservice.domain.model.TimeEntry;
-import java.util.Optional;
-import org.springframework.stereotype.Component;
+
+import lombok.experimental.UtilityClass;
 
 /**
  * Maps REST DTOs to domain commands and aggregates.
  */
-@Component
+@UtilityClass
 public class TimeEntryDtoMapper {
 
     /**
@@ -21,13 +24,14 @@ public class TimeEntryDtoMapper {
      * @param request REST payload.
      * @return domain command.
      */
-    public CreateTimeEntryCommand toCommand(final CreateTimeEntryRequest request) {
-        return new CreateTimeEntryCommand(
-                request.customerId(),
-                request.projectId(),
-                request.matterId(),
-                request.narrative(),
-                request.durationMinutes());
+    public static CreateTimeEntryCommand toCommand(final CreateTimeEntryRequest request) {
+        return CreateTimeEntryCommand.builder()
+                .customerId(request.getCustomerId())
+                .projectId(request.getProjectId())
+                .matterId(request.getMatterId())
+                .narrative(request.getNarrative())
+                .durationMinutes(request.getDurationMinutes())
+                .build();
     }
 
     /**
@@ -36,13 +40,14 @@ public class TimeEntryDtoMapper {
      * @param request update payload.
      * @return domain command with optional fields.
      */
-    public UpdateTimeEntryCommand toCommand(final UpdateTimeEntryRequest request) {
-        return new UpdateTimeEntryCommand(
-                Optional.ofNullable(request.customerId()),
-                Optional.ofNullable(request.projectId()),
-                Optional.ofNullable(request.matterId()),
-                Optional.ofNullable(request.narrative()),
-                Optional.ofNullable(request.durationMinutes()));
+    public static UpdateTimeEntryCommand toCommand(final UpdateTimeEntryRequest request) {
+        return UpdateTimeEntryCommand.builder()
+                .customerId(Optional.ofNullable(request.getCustomerId()))
+                .projectId(Optional.ofNullable(request.getProjectId()))
+                .matterId(Optional.ofNullable(request.getMatterId()))
+                .narrative(Optional.ofNullable(request.getNarrative()))
+                .durationMinutes(Optional.ofNullable(request.getDurationMinutes()))
+                .build();
     }
 
     /**
@@ -51,18 +56,19 @@ public class TimeEntryDtoMapper {
      * @param entry aggregate.
      * @return response DTO.
      */
-    public TimeEntryResponse toResponse(final TimeEntry entry) {
-        return new TimeEntryResponse(
-                entry.id(),
-                entry.customerId(),
-                entry.projectId(),
-                entry.matterId(),
-                entry.userId(),
-                entry.narrative(),
-                entry.durationMinutes(),
-                entry.status(),
-                entry.createdAt(),
-                entry.updatedAt(),
-                entry.approvedAt());
+    public static TimeEntryResponse toResponse(final TimeEntry entry) {
+        return TimeEntryResponse.builder()
+                .id(entry.id())
+                .customerId(entry.customerId())
+                .projectId(entry.projectId())
+                .matterId(entry.matterId())
+                .userId(entry.userId())
+                .narrative(entry.narrative())
+                .durationMinutes(entry.durationMinutes())
+                .status(EntryStatus.fromValue(entry.status().name()))
+                .createdAt(entry.createdAt())
+                .updatedAt(entry.updatedAt())
+                .approvedAt(entry.approvedAt())
+                .build();
     }
 }
