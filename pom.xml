@@ -144,6 +144,8 @@
                     <release>${maven.compiler.release}</release>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
+                        <arg>-Xlint:-processing</arg>
+                        <arg>-Xlint:-options</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
@@ -154,6 +156,7 @@
                 <version>3.2.5</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                 </configuration>
             </plugin>
 
@@ -163,6 +166,7 @@
                 <version>3.2.5</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                 </configuration>
             </plugin>
 

@@ -17,6 +17,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.StringUtils;
+
+import com.aequitas.aequitascentralservice.config.SupabaseProperties;
 
 /**
  * Configures JWT-based authentication and locking down all API endpoints by default.
@@ -26,9 +29,15 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final String jwtSecret;
+    private final String jwkSetUri;
 
-    public SecurityConfig(@Value("${security.jwt.secret:dev-secret-key-please-override}") final String jwtSecret) {
+    public SecurityConfig(
+            final SupabaseProperties supabaseProperties,
+            @Value("${security.jwt.secret:dev-secret-key-please-override}") final String jwtSecret,
+            @Value("${security.jwt.jwk-set-uri:}") final String jwkSetUri) {
         this.jwtSecret = jwtSecret;
+        final String supabaseJwk = supabaseProperties.auth().jwkSetUri();
+        this.jwkSetUri = StringUtils.hasText(jwkSetUri) ? jwkSetUri : supabaseJwk;
     }
 
     /**
@@ -46,6 +55,8 @@ public class SecurityConfig {
                                 requests.requestMatchers("/actuator/health", "/actuator/info")
                                         .permitAll()
                                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**")
+                                        .permitAll()
+                                        .requestMatchers("/api/v1/auth/**")
                                         .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/actuator/**")
                                         .authenticated()
@@ -70,6 +81,9 @@ public class SecurityConfig {
      */
     @Bean
     public JwtDecoder jwtDecoder() {
+        if (StringUtils.hasText(jwkSetUri)) {
+            return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        }
         final byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
         return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(keyBytes, "HmacSHA256")).build();
     }
@@ -81,10 +95,33 @@ public class SecurityConfig {
     }
 
     private java.util.Collection<GrantedAuthority> extractAuthorities(final Jwt jwt) {
-        final String role = jwt.getClaimAsString("role");
+        final String role = resolveRole(jwt);
         if (role == null) {
             return java.util.List.of();
         }
         return java.util.List.of(new SimpleGrantedAuthority("ROLE_" + role));
+    }
+
+    @SuppressWarnings("unchecked")
+    private String resolveRole(final Jwt jwt) {
+        final String role = jwt.getClaimAsString("role");
+        if (StringUtils.hasText(role)) {
+            return role.trim().toUpperCase();
+        }
+        final Object userMetadata = jwt.getClaim("user_metadata");
+        if (userMetadata instanceof java.util.Map<?, ?> metadata) {
+            final Object nested = metadata.get("role");
+            if (nested != null && StringUtils.hasText(String.valueOf(nested))) {
+                return String.valueOf(nested).trim().toUpperCase();
+            }
+        }
+        final Object appMetadata = jwt.getClaim("app_metadata");
+        if (appMetadata instanceof java.util.Map<?, ?> metadata) {
+            final Object nested = metadata.get("role");
+            if (nested != null && StringUtils.hasText(String.valueOf(nested))) {
+                return String.valueOf(nested).trim().toUpperCase();
+            }
+        }
+        return null;
     }
 }

@@ -1,4 +1,25 @@
 {
   "tabWidth": 2,
-  "useTabs": false
+  "useTabs": false,
+  "printWidth": 120,
+  "endOfLine": "lf",
+  "trailingComma": "none",
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "overrides": [
+    {
+      "files": "*.java",
+      "options": {
+        "tabWidth": 2,
+        "printWidth": 120,
+        "useTabs": false
+      }
+    },
+    {
+      "files": ["*.json", "*.yml", "*.yaml", "*.md"],
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
 }

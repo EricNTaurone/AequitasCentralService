@@ -26,9 +26,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import com.aequitas.aequitascentralservice.adapter.web.dto.PageResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.CreateTimeEntryRequest;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.IdResponse;
+import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryPageResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateTimeEntryRequest;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryCommandPort;
@@ -43,6 +43,16 @@ import com.aequitas.aequitascentralservice.domain.pagination.PageResult;
 import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
 import com.aequitas.aequitascentralservice.domain.value.IdempotencyOperation;
 
+/**
+ * Comprehensive JUnit5 test suite for {@link TimeEntryController}, validating REST endpoint behavior,
+ * request/response mapping, idempotency handling, and proper delegation to hexagonal ports.
+ *
+ * <p>This test class follows a GIVEN/WHEN/THEN structure for clarity and employs Mockito for
+ * dependency isolation. All domain logic is mocked; only the controller's web-layer concerns
+ * (HTTP status codes, DTO mapping, parameter validation) are exercised.
+ *
+ * <p><strong>Coverage Target:</strong> 100% line and branch coverage of {@link TimeEntryController}.
+ */
 @ExtendWith(MockitoExtension.class)
 class TimeEntryControllerTest {
 
@@ -111,6 +121,32 @@ class TimeEntryControllerTest {
                 .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_CREATE), supplierCaptor.capture());
         assertNotNull(supplierCaptor.getValue());
         verify(commandPort, times(1)).create(command);
+        verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
+    }
+
+    @Test
+    void GIVEN_createRequestWithoutIdempotencyKey_WHEN_create_THEN_successfullyCreatesEntry() {
+        // GIVEN
+        CreateTimeEntryRequest request = new CreateTimeEntryRequest(CUSTOMER_ID, PROJECT_ID, NARRATIVE, DURATION);
+        when(commandPort.create(createCommandCaptor.capture())).thenReturn(ENTRY_ID);
+        doAnswer(invocation -> {
+            Supplier<UUID> supplier = invocation.getArgument(2);
+            return supplier.get();
+        })
+                .when(idempotencyService)
+                .execute(eq(null), eq(IdempotencyOperation.TIME_ENTRY_CREATE),
+                        org.mockito.ArgumentMatchers.any());
+
+        // WHEN
+        ResponseEntity<IdResponse> response = controller.create(null, request);
+
+        // THEN
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(ENTRY_ID, response.getBody().getId());
+        verify(idempotencyService, times(1))
+                .execute(eq(null), eq(IdempotencyOperation.TIME_ENTRY_CREATE), org.mockito.ArgumentMatchers.any());
+        verify(commandPort, times(1)).create(org.mockito.ArgumentMatchers.any());
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
     }
 
@@ -215,15 +251,15 @@ class TimeEntryControllerTest {
         when(queryPort.search(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(page);
 
         // WHEN
-        ResponseEntity<PageResponse<TimeEntryResponse>> response = controller.search(CUSTOMER_ID, PROJECT_ID,
+        ResponseEntity<TimeEntryPageResponse> response = controller.search(CUSTOMER_ID, PROJECT_ID,
                 "submitted", USER_ID, 25, CURSOR);
 
         // THEN
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(1, response.getBody().items().size());
-        assertEquals("cursor-2", response.getBody().nextCursor());
-        assertTrue(response.getBody().hasMore());
+        assertEquals(1, response.getBody().getItems().size());
+        assertEquals("cursor-2", response.getBody().getNextCursor());
+        assertTrue(response.getBody().getHasMore());
         verify(queryPort, times(1)).search(filterCaptor.capture(), pageRequestCaptor.capture());
         TimeEntryFilter filter = filterCaptor.getValue();
         assertEquals(Optional.of(CUSTOMER_ID), filter.customerId());
@@ -248,6 +284,62 @@ class TimeEntryControllerTest {
         assertEquals(
                 "No enum constant com.aequitas.aequitascentralservice.domain.value.EntryStatus.BAD",
                 exception.getMessage());
+        verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
+    }
+
+    @Test
+    void GIVEN_nullStatusParameter_WHEN_search_THEN_searchesAllStatuses() {
+        // GIVEN
+        TimeEntry entry = sampleEntry(EntryStatus.DRAFT);
+        PageResult<TimeEntry> page = new PageResult<>(List.of(entry), null, 1, false);
+        when(queryPort.search(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(page);
+
+        // WHEN
+        ResponseEntity<TimeEntryPageResponse> response = controller.search(null, null, null, null, 10, null);
+
+        // THEN
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verify(queryPort, times(1)).search(filterCaptor.capture(), pageRequestCaptor.capture());
+        TimeEntryFilter filter = filterCaptor.getValue();
+        assertEquals(Optional.empty(), filter.status());
+        verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
+    }
+
+    @Test
+    void GIVEN_blankStatusParameter_WHEN_search_THEN_searchesAllStatuses() {
+        // GIVEN
+        TimeEntry entry = sampleEntry(EntryStatus.APPROVED);
+        PageResult<TimeEntry> page = new PageResult<>(List.of(entry), null, 1, false);
+        when(queryPort.search(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(page);
+
+        // WHEN
+        ResponseEntity<TimeEntryPageResponse> response = controller.search(null, null, "  ", null, 10, null);
+
+        // THEN
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verify(queryPort, times(1)).search(filterCaptor.capture(), pageRequestCaptor.capture());
+        TimeEntryFilter filter = filterCaptor.getValue();
+        assertEquals(Optional.empty(), filter.status());
+        verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
+    }
+
+    @Test
+    void GIVEN_lowerCaseStatus_WHEN_search_THEN_parsesCaseInsensitively() {
+        // GIVEN
+        TimeEntry entry = sampleEntry(EntryStatus.SUBMITTED);
+        PageResult<TimeEntry> page = new PageResult<>(List.of(entry), null, 1, false);
+        when(queryPort.search(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(page);
+
+        // WHEN
+        ResponseEntity<TimeEntryPageResponse> response = controller.search(null, null, "draft", null, 10, null);
+
+        // THEN
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(queryPort, times(1)).search(filterCaptor.capture(), pageRequestCaptor.capture());
+        TimeEntryFilter filter = filterCaptor.getValue();
+        assertEquals(Optional.of(EntryStatus.DRAFT), filter.status());
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
     }
 
