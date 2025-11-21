@@ -8,22 +8,24 @@ import com.aequitas.aequitascentralservice.domain.model.OutboxMessage;
  */
 public final class OutboxMapper {
 
-    private OutboxMapper() {}
+    private OutboxMapper() {
+    }
 
     /**
      * @param message domain model.
      * @return entity representation.
      */
     public static OutboxEntity toEntity(final OutboxMessage message) {
-        final OutboxEntity entity = new OutboxEntity();
-        entity.setId(message.id());
-        entity.setFirmId(message.firmId());
-        entity.setAggregateId(message.aggregateId());
-        entity.setEventType(message.eventType());
-        entity.setPayloadJson(message.payloadJson());
-        entity.setOccurredAt(message.occurredAt());
-        entity.setPublishedAt(message.publishedAt());
-        entity.setEventKey(message.aggregateId().toString() + "-" + message.eventType());
+        final OutboxEntity entity = OutboxEntity.builder()
+                .id(message.id())
+                .firmId(message.firmId())
+                .aggregateId(message.aggregateId())
+                .eventType(message.eventType())
+                .payloadJson(message.payloadJson())
+                .occurredAt(message.occurredAt())
+                .publishedAt(message.publishedAt())
+                .eventKey(message.aggregateId().toString() + "-" + message.eventType())
+                .build();
         return entity;
     }
 

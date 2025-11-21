@@ -2,6 +2,8 @@ package com.aequitas.aequitascentralservice.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import lombok.NonNull;
+
 /**
  * Bindable properties for Supabase integration.
  *
@@ -10,7 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param auth nested authentication properties.
  */
 @ConfigurationProperties(prefix = "supabase")
-public record SupabaseProperties(String url, String serviceKey, Auth auth) {
+public record SupabaseProperties(@NonNull String url, @NonNull String serviceKey, Auth auth) {
 
     public SupabaseProperties {
         auth = auth == null ? new Auth(null) : auth;

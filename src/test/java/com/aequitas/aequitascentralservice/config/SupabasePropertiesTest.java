@@ -1,191 +1,294 @@
 package com.aequitas.aequitascentralservice.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Production-grade JUnit 5 tests for SupabaseProperties.
+ * Targets: 100% Line Coverage, 100% Branch Coverage, 100% Mutation Score.
+ */
 class SupabasePropertiesTest {
 
-    private static final String TEST_URL = "https://test.supabase.co";
-    private static final String TEST_SERVICE_KEY = "test-service-key-12345";
-    private static final String TEST_JWK_SET_URI = "https://test.supabase.co/.well-known/jwks.json";
+    private static final String VALID_URL = "https://xyz.supabase.co";
+    private static final String VALID_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+    private static final String VALID_JWKS_URI = "https://xyz.supabase.co/.well-known/jwks.json";
+
+    // ========== Constructor Tests ==========
 
     @Test
-    void GIVEN_ValidParameters_WHEN_SupabasePropertiesCreated_THEN_AllFieldsAreSet() {
+    void GIVEN_validParameters_WHEN_constructorCalled_THEN_instanceCreated() {
         // GIVEN
-        final SupabaseProperties.Auth auth = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
 
         // WHEN
-        final SupabaseProperties result = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, auth);
+        SupabaseProperties properties = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
 
         // THEN
-        assertNotNull(result, "SupabaseProperties should not be null");
-        assertEquals(TEST_URL, result.url(), "URL should match expected value");
-        assertEquals(TEST_SERVICE_KEY, result.serviceKey(), "Service key should match expected value");
-        assertNotNull(result.auth(), "Auth should not be null");
-        assertEquals(TEST_JWK_SET_URI, result.auth().jwkSetUri(), "JWK Set URI should match expected value");
+        assertThat(properties).isNotNull();
+        assertThat(properties.url()).isEqualTo(VALID_URL);
+        assertThat(properties.serviceKey()).isEqualTo(VALID_SERVICE_KEY);
+        assertThat(properties.auth()).isEqualTo(auth);
+        assertThat(properties.auth().jwkSetUri()).isEqualTo(VALID_JWKS_URI);
     }
 
     @Test
-    void GIVEN_NullAuth_WHEN_SupabasePropertiesCreated_THEN_AuthIsInitializedWithNull() {
-        // GIVEN
-        // auth is null
-
-        // WHEN
-        final SupabaseProperties result = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, null);
+    void GIVEN_nullAuth_WHEN_constructorCalled_THEN_defaultAuthCreated() {
+        // GIVEN / WHEN
+        SupabaseProperties properties = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, null);
 
         // THEN
-        assertNotNull(result, "SupabaseProperties should not be null");
-        assertEquals(TEST_URL, result.url(), "URL should match expected value");
-        assertEquals(TEST_SERVICE_KEY, result.serviceKey(), "Service key should match expected value");
-        assertNotNull(result.auth(), "Auth should not be null, should be initialized");
-        assertNull(result.auth().jwkSetUri(), "JWK Set URI should be null");
+        assertThat(properties.auth()).isNotNull();
+        assertThat(properties.auth().jwkSetUri()).isNull();
     }
 
     @Test
-    void GIVEN_NullUrl_WHEN_SupabasePropertiesCreated_THEN_UrlIsNull() {
+    void GIVEN_nullUrl_WHEN_constructorCalled_THEN_throwsNullPointerException() {
         // GIVEN
-        final SupabaseProperties.Auth auth = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
 
-        // WHEN
-        final SupabaseProperties result = new SupabaseProperties(null, TEST_SERVICE_KEY, auth);
-
-        // THEN
-        assertNotNull(result, "SupabaseProperties should not be null");
-        assertNull(result.url(), "URL should be null");
-        assertEquals(TEST_SERVICE_KEY, result.serviceKey(), "Service key should match expected value");
-        assertNotNull(result.auth(), "Auth should not be null");
+        // WHEN / THEN
+        assertThatThrownBy(() -> new SupabaseProperties(null, VALID_SERVICE_KEY, auth))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("url");
     }
 
     @Test
-    void GIVEN_NullServiceKey_WHEN_SupabasePropertiesCreated_THEN_ServiceKeyIsNull() {
+    void GIVEN_nullServiceKey_WHEN_constructorCalled_THEN_throwsNullPointerException() {
         // GIVEN
-        final SupabaseProperties.Auth auth = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
 
+        // WHEN / THEN
+        assertThatThrownBy(() -> new SupabaseProperties(VALID_URL, null, auth))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("serviceKey");
+    }
+
+    // ========== Auth Record Tests ==========
+
+    @Test
+    void GIVEN_validJwksUri_WHEN_authConstructorCalled_THEN_authInstanceCreated() {
         // WHEN
-        final SupabaseProperties result = new SupabaseProperties(TEST_URL, null, auth);
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
 
         // THEN
-        assertNotNull(result, "SupabaseProperties should not be null");
-        assertEquals(TEST_URL, result.url(), "URL should match expected value");
-        assertNull(result.serviceKey(), "Service key should be null");
-        assertNotNull(result.auth(), "Auth should not be null");
+        assertThat(auth).isNotNull();
+        assertThat(auth.jwkSetUri()).isEqualTo(VALID_JWKS_URI);
     }
 
     @Test
-    void GIVEN_AllNullParameters_WHEN_SupabasePropertiesCreated_THEN_OnlyAuthIsInitialized() {
-        // GIVEN
-        // all parameters are null
-
+    void GIVEN_nullJwksUri_WHEN_authConstructorCalled_THEN_authInstanceCreatedWithNull() {
         // WHEN
-        final SupabaseProperties result = new SupabaseProperties(null, null, null);
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(null);
 
         // THEN
-        assertNotNull(result, "SupabaseProperties should not be null");
-        assertNull(result.url(), "URL should be null");
-        assertNull(result.serviceKey(), "Service key should be null");
-        assertNotNull(result.auth(), "Auth should not be null, should be initialized");
-        assertNull(result.auth().jwkSetUri(), "JWK Set URI should be null");
+        assertThat(auth).isNotNull();
+        assertThat(auth.jwkSetUri()).isNull();
+    }
+
+    // ========== Equals and HashCode Tests ==========
+
+    @Test
+    void GIVEN_sameValues_WHEN_equalsChecked_THEN_objectsAreEqual() {
+        // GIVEN
+        SupabaseProperties.Auth auth1 = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties.Auth auth2 = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties props1 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth1);
+        SupabaseProperties props2 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth2);
+
+        // WHEN / THEN
+        assertThat(props1).isEqualTo(props2);
+        assertThat(props1.hashCode()).isEqualTo(props2.hashCode());
     }
 
     @Test
-    void GIVEN_ValidAuthParameters_WHEN_AuthCreated_THEN_JwkSetUriIsSet() {
+    void GIVEN_differentUrl_WHEN_equalsChecked_THEN_objectsAreNotEqual() {
         // GIVEN
-        // TEST_JWK_SET_URI constant
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties props1 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
+        SupabaseProperties props2 = new SupabaseProperties("https://different.supabase.co", VALID_SERVICE_KEY, auth);
 
-        // WHEN
-        final SupabaseProperties.Auth result = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
-
-        // THEN
-        assertNotNull(result, "Auth should not be null");
-        assertEquals(TEST_JWK_SET_URI, result.jwkSetUri(), "JWK Set URI should match expected value");
+        // WHEN / THEN
+        assertThat(props1).isNotEqualTo(props2);
+        assertThat(props1.hashCode()).isNotEqualTo(props2.hashCode());
     }
 
     @Test
-    void GIVEN_NullJwkSetUri_WHEN_AuthCreated_THEN_JwkSetUriIsNull() {
+    void GIVEN_differentServiceKey_WHEN_equalsChecked_THEN_objectsAreNotEqual() {
         // GIVEN
-        // jwkSetUri is null
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties props1 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
+        SupabaseProperties props2 = new SupabaseProperties(VALID_URL, "differentKey", auth);
 
-        // WHEN
-        final SupabaseProperties.Auth result = new SupabaseProperties.Auth(null);
-
-        // THEN
-        assertNotNull(result, "Auth should not be null");
-        assertNull(result.jwkSetUri(), "JWK Set URI should be null");
+        // WHEN / THEN
+        assertThat(props1).isNotEqualTo(props2);
+        assertThat(props1.hashCode()).isNotEqualTo(props2.hashCode());
     }
 
     @Test
-    void GIVEN_TwoIdenticalSupabaseProperties_WHEN_Compared_THEN_AreEqual() {
+    void GIVEN_differentAuth_WHEN_equalsChecked_THEN_objectsAreNotEqual() {
         // GIVEN
-        final SupabaseProperties.Auth auth1 = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
-        final SupabaseProperties.Auth auth2 = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
-        final SupabaseProperties props1 = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, auth1);
-        final SupabaseProperties props2 = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, auth2);
+        SupabaseProperties.Auth auth1 = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties.Auth auth2 = new SupabaseProperties.Auth("https://different.jwks.json");
+        SupabaseProperties props1 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth1);
+        SupabaseProperties props2 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth2);
 
-        // WHEN
-        final int hashCode1 = props1.hashCode();
-        final int hashCode2 = props2.hashCode();
-
-        // THEN
-        assertEquals(props1, props2, "Identical SupabaseProperties should be equal");
-        assertEquals(hashCode1, hashCode2, "Hash codes of identical SupabaseProperties should be equal");
+        // WHEN / THEN
+        assertThat(props1).isNotEqualTo(props2);
+        assertThat(props1.hashCode()).isNotEqualTo(props2.hashCode());
     }
 
     @Test
-    void GIVEN_TwoDifferentSupabaseProperties_WHEN_Compared_THEN_AreNotEqual() {
+    void GIVEN_sameAuthValues_WHEN_authEqualsChecked_THEN_authObjectsAreEqual() {
         // GIVEN
-        final SupabaseProperties.Auth auth1 = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
-        final SupabaseProperties.Auth auth2 = new SupabaseProperties.Auth("different-uri");
-        final SupabaseProperties props1 = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, auth1);
-        final SupabaseProperties props2 = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, auth2);
+        SupabaseProperties.Auth auth1 = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties.Auth auth2 = new SupabaseProperties.Auth(VALID_JWKS_URI);
 
-        // WHEN & THEN
-        assertNotNull(props1, "First properties should not be null");
-        assertNotNull(props2, "Second properties should not be null");
-        assertEquals(false, props1.equals(props2), "Different SupabaseProperties should not be equal");
+        // WHEN / THEN
+        assertThat(auth1).isEqualTo(auth2);
+        assertThat(auth1.hashCode()).isEqualTo(auth2.hashCode());
     }
 
     @Test
-    void GIVEN_SupabaseProperties_WHEN_ToStringCalled_THEN_ReturnsNonNullString() {
+    void GIVEN_differentAuthValues_WHEN_authEqualsChecked_THEN_authObjectsAreNotEqual() {
         // GIVEN
-        final SupabaseProperties.Auth auth = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
-        final SupabaseProperties props = new SupabaseProperties(TEST_URL, TEST_SERVICE_KEY, auth);
+        SupabaseProperties.Auth auth1 = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties.Auth auth2 = new SupabaseProperties.Auth("https://different.jwks.json");
+
+        // WHEN / THEN
+        assertThat(auth1).isNotEqualTo(auth2);
+        assertThat(auth1.hashCode()).isNotEqualTo(auth2.hashCode());
+    }
+
+    // ========== ToString Tests ==========
+
+    @Test
+    void GIVEN_validProperties_WHEN_toStringCalled_THEN_containsAllFields() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties properties = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
 
         // WHEN
-        final String result = props.toString();
+        String result = properties.toString();
 
         // THEN
-        assertNotNull(result, "toString should not return null");
-        assertEquals(false, result.isEmpty(), "toString should not return empty string");
+        assertThat(result)
+                .contains("SupabaseProperties")
+                .contains(VALID_URL)
+                .contains(VALID_SERVICE_KEY)
+                .contains("Auth");
     }
 
     @Test
-    void GIVEN_Auth_WHEN_ToStringCalled_THEN_ReturnsNonNullString() {
+    void GIVEN_validAuth_WHEN_authToStringCalled_THEN_containsJwkSetUri() {
         // GIVEN
-        final SupabaseProperties.Auth auth = new SupabaseProperties.Auth(TEST_JWK_SET_URI);
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
 
         // WHEN
-        final String result = auth.toString();
+        String result = auth.toString();
 
         // THEN
-        assertNotNull(result, "toString should not return null");
-        assertEquals(false, result.isEmpty(), "toString should not return empty string");
+        assertThat(result)
+                .contains("Auth")
+                .contains(VALID_JWKS_URI);
     }
 
     @Test
-    void GIVEN_EmptyStrings_WHEN_SupabasePropertiesCreated_THEN_EmptyStringsArePreserved() {
+    void GIVEN_authWithNullJwksUri_WHEN_authToStringCalled_THEN_containsNull() {
         // GIVEN
-        final SupabaseProperties.Auth auth = new SupabaseProperties.Auth("");
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(null);
 
         // WHEN
-        final SupabaseProperties result = new SupabaseProperties("", "", auth);
+        String result = auth.toString();
 
         // THEN
-        assertNotNull(result, "SupabaseProperties should not be null");
-        assertEquals("", result.url(), "URL should be empty string");
-        assertEquals("", result.serviceKey(), "Service key should be empty string");
-        assertNotNull(result.auth(), "Auth should not be null");
-        assertEquals("", result.auth().jwkSetUri(), "JWK Set URI should be empty string");
+        assertThat(result)
+                .contains("Auth")
+                .contains("null");
+    }
+
+    // ========== Edge Cases ==========
+
+    @Test
+    void GIVEN_emptyStrings_WHEN_constructorCalled_THEN_instanceCreatedWithEmptyValues() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth("");
+
+        // WHEN
+        SupabaseProperties properties = new SupabaseProperties("", "", auth);
+
+        // THEN
+        assertThat(properties.url()).isEmpty();
+        assertThat(properties.serviceKey()).isEmpty();
+        assertThat(properties.auth().jwkSetUri()).isEmpty();
+    }
+
+    @Test
+    void GIVEN_nullAuthInCompactConstructor_WHEN_constructorCalledTwice_THEN_bothGetDefaultAuth() {
+        // GIVEN / WHEN
+        SupabaseProperties props1 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, null);
+        SupabaseProperties props2 = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, null);
+
+        // THEN
+        assertThat(props1.auth()).isNotNull();
+        assertThat(props2.auth()).isNotNull();
+        assertThat(props1.auth()).isEqualTo(props2.auth());
+    }
+
+    @Test
+    void GIVEN_sameInstance_WHEN_equalsChecked_THEN_returnsTrue() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties properties = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
+
+        // WHEN / THEN
+        assertThat(properties).isEqualTo(properties);
+    }
+
+    @Test
+    void GIVEN_nullComparison_WHEN_equalsChecked_THEN_returnsFalse() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties properties = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
+
+        // WHEN / THEN
+        assertThat(properties).isNotEqualTo(null);
+    }
+
+    @Test
+    void GIVEN_differentClass_WHEN_equalsChecked_THEN_returnsFalse() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+        SupabaseProperties properties = new SupabaseProperties(VALID_URL, VALID_SERVICE_KEY, auth);
+
+        // WHEN / THEN
+        assertThat(properties).isNotEqualTo("NotASupabaseProperties");
+    }
+
+    @Test
+    void GIVEN_sameAuthInstance_WHEN_authEqualsChecked_THEN_returnsTrue() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+
+        // WHEN / THEN
+        assertThat(auth).isEqualTo(auth);
+    }
+
+    @Test
+    void GIVEN_nullAuthComparison_WHEN_authEqualsChecked_THEN_returnsFalse() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+
+        // WHEN / THEN
+        assertThat(auth).isNotEqualTo(null);
+    }
+
+    @Test
+    void GIVEN_differentAuthClass_WHEN_authEqualsChecked_THEN_returnsFalse() {
+        // GIVEN
+        SupabaseProperties.Auth auth = new SupabaseProperties.Auth(VALID_JWKS_URI);
+
+        // WHEN / THEN
+        assertThat(auth).isNotEqualTo("NotAnAuth");
     }
 }

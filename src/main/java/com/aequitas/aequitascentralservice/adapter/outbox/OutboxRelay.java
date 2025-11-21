@@ -1,21 +1,23 @@
 package com.aequitas.aequitascentralservice.adapter.outbox;
 
-import com.aequitas.aequitascentralservice.adapter.persistence.repository.OutboxJpaRepository;
-import com.aequitas.aequitascentralservice.app.port.outbound.ClockPort;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.aequitas.aequitascentralservice.adapter.persistence.entity.OutboxEntity;
+import com.aequitas.aequitascentralservice.adapter.persistence.repository.OutboxJpaRepository;
+import com.aequitas.aequitascentralservice.app.port.outbound.ClockPort;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Polls the outbox table and relays unpublished events to the configured {@link EventPublisher}.
  */
 @Component
+@Slf4j
 public class OutboxRelay {
-
-    private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
 
     private final OutboxJpaRepository outboxJpaRepository;
     private final EventPublisher eventPublisher;
@@ -36,7 +38,7 @@ public class OutboxRelay {
     @Scheduled(fixedDelayString = "${outbox.relay-interval:PT5S}")
     @Transactional
     public void relay() {
-        final List<com.aequitas.aequitascentralservice.adapter.persistence.entity.OutboxEntity> batch =
+        final List<OutboxEntity> batch =
                 outboxJpaRepository.findTop100ByPublishedAtIsNullOrderByOccurredAtAsc();
         if (batch.isEmpty()) {
             return;

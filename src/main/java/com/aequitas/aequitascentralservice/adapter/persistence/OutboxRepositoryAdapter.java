@@ -6,18 +6,18 @@ import com.aequitas.aequitascentralservice.app.port.outbound.OutboxPort;
 import com.aequitas.aequitascentralservice.domain.event.DomainEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
  * JPA-backed implementation of the {@link OutboxPort}.
  */
 @Component
+@Slf4j
 public class OutboxRepositoryAdapter implements OutboxPort {
-
-    private static final Logger log = LoggerFactory.getLogger(OutboxRepositoryAdapter.class);
 
     private final OutboxJpaRepository repository;
     private final ObjectMapper objectMapper;
@@ -30,14 +30,16 @@ public class OutboxRepositoryAdapter implements OutboxPort {
 
     @Override
     public void append(final UUID firmId, final UUID aggregateId, final DomainEvent event) {
-        final OutboxEntity entity = new OutboxEntity();
-        entity.setId(event.eventId());
-        entity.setFirmId(firmId);
-        entity.setAggregateId(aggregateId);
-        entity.setEventType(event.eventType());
-        entity.setEventKey(aggregateId + "::" + event.eventType());
-        entity.setPayloadJson(toJson(event));
-        entity.setOccurredAt(event.occurredAt());
+        final OutboxEntity entity = OutboxEntity.builder()
+                .id(event.eventId())
+                .firmId(firmId)
+                .aggregateId(aggregateId)
+                .eventType(event.eventType())
+                .eventKey(aggregateId + "::" + event.eventType())
+                .payloadJson(toJson(event))
+                .occurredAt(event.occurredAt())
+                .build();
+
         repository.save(entity);
     }
 

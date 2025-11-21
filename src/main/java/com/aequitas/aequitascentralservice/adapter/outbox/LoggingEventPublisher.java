@@ -1,16 +1,15 @@
 package com.aequitas.aequitascentralservice.adapter.outbox;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Simple {@link EventPublisher} that logs payloads for local development.
  */
 @Component
+@Slf4j
 public class LoggingEventPublisher implements EventPublisher {
-
-    private static final Logger log = LoggerFactory.getLogger(LoggingEventPublisher.class);
 
     /**
      * {@inheritDoc}
@@ -22,7 +21,7 @@ public class LoggingEventPublisher implements EventPublisher {
             final String partitionKey,
             final String deduplicationKey) {
         log.info(
-                "Publishing eventType={} partitionKey={} dedupKey={} payload={}",
+                "Publishing eventType={} partitionKey={} dedupeKey={} payload={}",
                 eventType,
                 partitionKey,
                 deduplicationKey,

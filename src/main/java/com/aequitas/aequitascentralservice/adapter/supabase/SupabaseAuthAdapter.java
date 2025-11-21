@@ -1,16 +1,8 @@
 package com.aequitas.aequitascentralservice.adapter.supabase;
 
-import com.aequitas.aequitascentralservice.app.port.outbound.SupabaseAuthPort;
-import com.aequitas.aequitascentralservice.config.SupabaseProperties;
-import com.aequitas.aequitascentralservice.domain.command.SignInCommand;
-import com.aequitas.aequitascentralservice.domain.command.SignUpCommand;
-import com.aequitas.aequitascentralservice.domain.model.SupabaseAuthSession;
-import com.aequitas.aequitascentralservice.domain.model.SupabaseUser;
-import com.aequitas.aequitascentralservice.domain.value.AuthTokens;
-import com.aequitas.aequitascentralservice.domain.value.Role;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 import java.util.UUID;
+
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -18,22 +10,37 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import com.aequitas.aequitascentralservice.app.port.outbound.SupabaseAuthPort;
+import com.aequitas.aequitascentralservice.config.SupabaseProperties;
+import com.aequitas.aequitascentralservice.constants.SupabaseConstants;
+import com.aequitas.aequitascentralservice.domain.command.SignInCommand;
+import com.aequitas.aequitascentralservice.domain.command.SignUpCommand;
+import com.aequitas.aequitascentralservice.domain.model.SupabaseAuthSession;
+import com.aequitas.aequitascentralservice.domain.model.SupabaseUser;
+import com.aequitas.aequitascentralservice.domain.value.AuthTokens;
+import com.aequitas.aequitascentralservice.domain.value.Role;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
- * HTTP adapter that calls Supabase Auth endpoints for user creation and password authentication.
+ * HTTP adapter that calls Supabase Auth endpoints for user creation and
+ * password authentication.
  */
 @Component
 public class SupabaseAuthAdapter implements SupabaseAuthPort {
 
     private final RestClient restClient;
+    private final SupabaseProperties properties;
 
     public SupabaseAuthAdapter(final RestClient supabaseRestClient, final SupabaseProperties properties) {
-        this.restClient = supabaseRestClient;
         if (!StringUtils.hasText(properties.serviceKey())) {
             throw new IllegalStateException("Supabase service key must be configured");
         }
         if (!StringUtils.hasText(properties.url())) {
             throw new IllegalStateException("Supabase base URL must be configured");
         }
+        
+        this.restClient = supabaseRestClient;
+        this.properties = properties;
     }
 
     @Override
@@ -41,7 +48,8 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
         try {
             final SupabaseUserResponse response = restClient
                     .post()
-                    .uri("/admin/users")
+                    .uri(String.format(SupabaseConstants.SIGNUP_URI, properties.url()))
+                    .header(SupabaseConstants.API_KEY_HEADER, properties.serviceKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new AdminCreateUserRequest(command.email(), command.password(), command.firmId(), command.role()))
                     .retrieve()
@@ -60,7 +68,8 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
         try {
             final SupabaseSignInResponse response = restClient
                     .post()
-                    .uri("/token?grant_type=password")
+                    .uri(String.format(SupabaseConstants.SIGNIN_URI, properties.url()))
+                    .header(SupabaseConstants.API_KEY_HEADER, properties.serviceKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new SignInRequest(command.email(), command.password()))
                     .retrieve()
@@ -69,8 +78,8 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
                 throw new IllegalStateException("Supabase sign-in did not return a user");
             }
             final SupabaseUser user = toDomainUser(response.user(), null);
-            final AuthTokens tokens =
-                    new AuthTokens(response.accessToken(), response.refreshToken(), response.expiresIn(), response.tokenType());
+            final AuthTokens tokens
+                    = new AuthTokens(response.accessToken(), response.refreshToken(), response.expiresIn(), response.tokenType());
             return new SupabaseAuthSession(user, tokens);
         } catch (RestClientResponseException ex) {
             throw translate("sign in with Supabase", ex);
@@ -159,7 +168,9 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
         }
     }
 
-    private record SignInRequest(String email, String password) {}
+    private record SignInRequest(String email, String password) {
+
+    }
 
     private record SupabaseUserResponse(
             String id,
@@ -167,12 +178,16 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
             @JsonProperty("app_metadata") Map<String, Object> appMetadata,
             @JsonProperty("user_metadata") Map<String, Object> userMetadata,
             String role,
-            @JsonProperty("firm_id") String firmId) {}
+            @JsonProperty("firm_id") String firmId) {
+
+    }
 
     private record SupabaseSignInResponse(
             @JsonProperty("access_token") String accessToken,
             @JsonProperty("refresh_token") String refreshToken,
             @JsonProperty("expires_in") long expiresIn,
             @JsonProperty("token_type") String tokenType,
-            SupabaseUserResponse user) {}
+            SupabaseUserResponse user) {
+
+    }
 }

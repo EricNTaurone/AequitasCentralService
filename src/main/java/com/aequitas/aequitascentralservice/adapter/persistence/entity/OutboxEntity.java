@@ -10,12 +10,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Builder;
 
 /**
  * JPA entity mapping the {@code outbox} table.
  */
 @Entity
 @Table(name = "outbox")
+@Builder
 public class OutboxEntity {
 
     @Id
