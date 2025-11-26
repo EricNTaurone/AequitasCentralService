@@ -1,8 +1,11 @@
 package com.aequitas.aequitascentralservice.domain.model;
 
-import com.aequitas.aequitascentralservice.domain.value.IdempotencyOperation;
 import java.time.Instant;
 import java.util.UUID;
+
+import com.aequitas.aequitascentralservice.domain.value.IdempotencyOperation;
+
+import lombok.Builder;
 
 /**
  * Represents an idempotent workflow execution stored for replay safety.
@@ -16,6 +19,7 @@ import java.util.UUID;
  * @param createdAt creation timestamp.
  * @param expiresAt expiration timestamp after which the key can be reused.
  */
+@Builder
 public record IdempotencyRecord(
         UUID id,
         IdempotencyOperation operation,

@@ -7,57 +7,38 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
 /**
  * JPA entity mapping the {@code user_profiles} table.
  */
 @Entity
-@Table(name = "user_profiles")
+@Table(name = UserProfileEntity.TABLE_NAME)
+@Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserProfileEntity {
+    public static final String TABLE_NAME = "user_profiles";
+    public static final String FIRM_ID = "firm_id";
+    public static final String EMAIL = "email";
+    public static final String ROLE = "role";
 
     @Id
     private UUID id;
 
-    @Column(name = "firm_id", nullable = false)
+    @Column(name = FIRM_ID, nullable = false)
     private UUID firmId;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = EMAIL, nullable = false)
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
+    @Column(name = ROLE, nullable = false)
     private Role role;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(final UUID id) {
-        this.id = id;
-    }
-
-    public UUID getFirmId() {
-        return firmId;
-    }
-
-    public void setFirmId(final UUID firmId) {
-        this.firmId = firmId;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(final String email) {
-        this.email = email;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(final Role role) {
-        this.role = role;
-    }
 }

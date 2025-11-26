@@ -1,163 +1,82 @@
 package com.aequitas.aequitascentralservice.adapter.persistence.entity;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import java.util.UUID;
-import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * JPA entity for the {@code time_entries} table.
  */
 @Entity
-@Table(name = "time_entries")
+@Table(name = TimeEntryEntity.TABLE_NAME)
+@Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TimeEntryEntity {
+    public static final String TABLE_NAME = "time_entries";
+    public static final String FIRM_ID = "firm_id";
+    public static final String USER_ID = "user_id";
+    public static final String CUSTOMER_ID = "customer_id";
+    public static final String PROJECT_ID = "project_id";
+    public static final String MATTER_ID = "matter_id";
+    public static final String NARRATIVE = "narrative";
+    public static final String DURATION_MINUTES = "duration_minutes";
+    public static final String STATUS = "status";
+    public static final String CREATED_AT = "created_at";
+    public static final String UPDATED_AT = "updated_at";
+    public static final String APPROVED_AT = "approved_at";
+    public static final String APPROVED_BY = "approved_by";
 
     @Id
     private UUID id;
 
-    @Column(name = "firm_id", nullable = false)
+    @Column(name = FIRM_ID, nullable = false)
     private UUID firmId;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = USER_ID, nullable = false)
     private UUID userId;
 
-    @Column(name = "customer_id", nullable = false)
+    @Column(name = CUSTOMER_ID, nullable = false)
     private UUID customerId;
 
-    @Column(name = "project_id", nullable = false)
+    @Column(name = PROJECT_ID, nullable = false)
     private UUID projectId;
 
-    @Column(name = "matter_id")
+    @Column(name = MATTER_ID)
     private UUID matterId;
 
-    @Column(name = "narrative", nullable = false, length = 2048)
+    @Column(name = NARRATIVE, nullable = false, length = 2048)
     private String narrative;
 
-    @Column(name = "duration_minutes", nullable = false)
+    @Column(name = DURATION_MINUTES, nullable = false)
     private int durationMinutes;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = STATUS, nullable = false)
     private EntryStatus status;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = CREATED_AT, nullable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = UPDATED_AT, nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "approved_at")
+    @Column(name = APPROVED_AT)
     private Instant approvedAt;
 
-    @Column(name = "approved_by")
+    @Column(name = APPROVED_BY)
     private UUID approvedBy;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(final UUID id) {
-        this.id = id;
-    }
-
-    public UUID getFirmId() {
-        return firmId;
-    }
-
-    public void setFirmId(final UUID firmId) {
-        this.firmId = firmId;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(final UUID userId) {
-        this.userId = userId;
-    }
-
-    public UUID getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(final UUID customerId) {
-        this.customerId = customerId;
-    }
-
-    public UUID getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(final UUID projectId) {
-        this.projectId = projectId;
-    }
-
-    public UUID getMatterId() {
-        return matterId;
-    }
-
-    public void setMatterId(final UUID matterId) {
-        this.matterId = matterId;
-    }
-
-    public String getNarrative() {
-        return narrative;
-    }
-
-    public void setNarrative(final String narrative) {
-        this.narrative = narrative;
-    }
-
-    public int getDurationMinutes() {
-        return durationMinutes;
-    }
-
-    public void setDurationMinutes(final int durationMinutes) {
-        this.durationMinutes = durationMinutes;
-    }
-
-    public EntryStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(final EntryStatus status) {
-        this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(final Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(final Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Instant getApprovedAt() {
-        return approvedAt;
-    }
-
-    public void setApprovedAt(final Instant approvedAt) {
-        this.approvedAt = approvedAt;
-    }
-
-    public UUID getApprovedBy() {
-        return approvedBy;
-    }
-
-    public void setApprovedBy(final UUID approvedBy) {
-        this.approvedBy = approvedBy;
-    }
 }

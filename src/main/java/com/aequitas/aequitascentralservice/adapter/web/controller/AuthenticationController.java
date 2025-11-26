@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.AuthResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.SignInRequest;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.SignUpRequest;
+import com.aequitas.aequitascentralservice.adapter.web.mapper.AuthenticationDtoMapper;
 import com.aequitas.aequitascentralservice.app.port.inbound.AuthenticationCommandPort;
 import com.aequitas.aequitascentralservice.domain.command.SignInCommand;
 import com.aequitas.aequitascentralservice.domain.command.SignUpCommand;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 
 /**
@@ -40,7 +42,7 @@ import jakarta.validation.Valid;
  * <b>Thread Safety:</b> This controller is stateless and safe for concurrent
  * invocation by multiple threads.
  * <p>
- * <b>Usage Example:</b>  {@code
+ * <b>Usage Example:</b> null {@code
  * POST /api/v1/auth/signup
  * {
  *   "firmId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
@@ -66,6 +68,7 @@ public class AuthenticationController {
      * This dependency is injected via constructor and is immutable after
      * construction.
      */
+    @Resource
     private final AuthenticationCommandPort authenticationCommandPort;
 
     /**

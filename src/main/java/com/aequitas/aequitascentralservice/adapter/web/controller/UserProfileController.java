@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.controller;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateUserRoleRequest;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UserProfileResponse;
+import com.aequitas.aequitascentralservice.adapter.web.mapper.UserProfileDtoMapper;
 import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileCommandPort;
 import com.aequitas.aequitascentralservice.app.port.inbound.UserProfileQueryPort;
 import com.aequitas.aequitascentralservice.domain.value.Role;

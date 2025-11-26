@@ -1,5 +1,9 @@
 package com.aequitas.aequitascentralservice.adapter.persistence;
 
+import java.util.UUID;
+
+import org.springframework.stereotype.Component;
+
 import com.aequitas.aequitascentralservice.adapter.persistence.entity.OutboxEntity;
 import com.aequitas.aequitascentralservice.adapter.persistence.repository.OutboxJpaRepository;
 import com.aequitas.aequitascentralservice.app.port.outbound.OutboxPort;
@@ -8,9 +12,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.UUID;
-import org.springframework.stereotype.Component;
 
 /**
  * JPA-backed implementation of the {@link OutboxPort}.
@@ -47,7 +48,6 @@ public class OutboxRepositoryAdapter implements OutboxPort {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize event {}", event.eventType(), e);
             throw new IllegalStateException("Unable to serialize event payload", e);
         }
     }

@@ -1,14 +1,16 @@
 package com.aequitas.aequitascentralservice.adapter.security;
 
-import com.aequitas.aequitascentralservice.app.port.outbound.CurrentUserPort;
-import com.aequitas.aequitascentralservice.domain.value.CurrentUser;
-import com.aequitas.aequitascentralservice.domain.value.Role;
 import java.util.UUID;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import com.aequitas.aequitascentralservice.app.port.outbound.CurrentUserPort;
+import com.aequitas.aequitascentralservice.domain.value.CurrentUser;
+import com.aequitas.aequitascentralservice.domain.value.Role;
 
 /**
  * Maps the Spring Security {@link Jwt} principal into the domain {@link CurrentUser}.
@@ -31,7 +33,6 @@ public class JwtCurrentUserAdapter implements CurrentUserPort {
         return new CurrentUser(userId, firmId, role);
     }
 
-    @SuppressWarnings("unchecked")
     private UUID extractUuidClaim(final Jwt jwt, final String claimName) {
         final Object direct = jwt.getClaim(claimName);
         if (direct != null && StringUtils.hasText(String.valueOf(direct))) {
@@ -54,7 +55,6 @@ public class JwtCurrentUserAdapter implements CurrentUserPort {
         throw new IllegalStateException("Missing required claim: " + claimName);
     }
 
-    @SuppressWarnings("unchecked")
     private Role extractRole(final Jwt jwt) {
         final String direct = jwt.getClaimAsString("role");
         if (StringUtils.hasText(direct)) {

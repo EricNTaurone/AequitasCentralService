@@ -1,5 +1,11 @@
 package com.aequitas.aequitascentralservice.app.service;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryCommandPort;
 import com.aequitas.aequitascentralservice.app.port.outbound.ClockPort;
 import com.aequitas.aequitascentralservice.app.port.outbound.CurrentUserPort;
@@ -16,10 +22,6 @@ import com.aequitas.aequitascentralservice.domain.model.TimeEntry;
 import com.aequitas.aequitascentralservice.domain.value.CurrentUser;
 import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
 import com.aequitas.aequitascentralservice.domain.value.Role;
-import java.time.Instant;
-import java.util.UUID;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implements the command-side flows for the time entry aggregate while enforcing RBAC and tenancy.
@@ -70,7 +72,7 @@ public class TimeEntryCommandService implements TimeEntryCommandPort {
                         command.narrative(),
                         command.durationMinutes(),
                         now);
-        return repositoryPort.save(entry).id();
+        return repositoryPort.save(entry).getId();
     }
 
     /**
@@ -85,15 +87,15 @@ public class TimeEntryCommandService implements TimeEntryCommandPort {
         ensureCanModify(currentUser, entry);
 
         final UUID targetCustomerId =
-                command.customerId().orElse(entry.customerId());
+                command.customerId().orElse(entry.getCustomerId());
         final UUID targetProjectId =
-                command.projectId().orElse(entry.projectId());
+                command.projectId().orElse(entry.getProjectId());
         final UUID targetMatterId =
-                command.matterId().orElse(entry.matterId());
+                command.matterId().orElse(entry.getMatterId());
         final String targetNarrative =
-                command.narrative().orElse(entry.narrative());
+                command.narrative().orElse(entry.getNarrative());
         final int targetDuration =
-                command.durationMinutes().orElse(entry.durationMinutes());
+                command.durationMinutes().orElse(entry.getDurationMinutes());
 
         final Customer customer = requireCustomer(targetCustomerId, currentUser);
         final Project project = requireProject(targetProjectId, currentUser);
@@ -141,7 +143,7 @@ public class TimeEntryCommandService implements TimeEntryCommandPort {
         repositoryPort.save(entry);
         outboxPort.append(
                 currentUser.firmId(),
-                entry.id(),
+                entry.getId(),
                 EntryApprovedEvent.from(entry));
     }
 
@@ -167,14 +169,14 @@ public class TimeEntryCommandService implements TimeEntryCommandPort {
         if (user.role() == Role.ADMIN) {
             return;
         }
-        if (user.role() == Role.MANAGER && entry.status() != EntryStatus.APPROVED) {
+        if (user.role() == Role.MANAGER && entry.getStatus() != EntryStatus.APPROVED) {
             return;
         }
         ensureEmployeeOwnsEntry(user, entry);
     }
 
     private void ensureEmployeeOwnsEntry(final CurrentUser user, final TimeEntry entry) {
-        if (!entry.userId().equals(user.userId())) {
+        if (!entry.getUserId().equals(user.userId())) {
             throw new IllegalStateException("Employees can only modify their own entries");
         }
     }
@@ -183,7 +185,7 @@ public class TimeEntryCommandService implements TimeEntryCommandPort {
         if (user.role() == Role.ADMIN) {
             return;
         }
-        if (entry.status() == EntryStatus.APPROVED) {
+        if (entry.getStatus() == EntryStatus.APPROVED) {
             throw new IllegalStateException("Approved entries are immutable");
         }
     }

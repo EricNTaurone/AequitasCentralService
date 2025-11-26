@@ -2,14 +2,15 @@ package com.aequitas.aequitascentralservice.adapter.persistence.mapper;
 
 import com.aequitas.aequitascentralservice.adapter.persistence.entity.TimeEntryEntity;
 import com.aequitas.aequitascentralservice.domain.model.TimeEntry;
-import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
+
+import lombok.experimental.UtilityClass;
 
 /**
- * Mapper bridging {@link TimeEntry} aggregates and {@link TimeEntryEntity} rows.
+ * Mapper bridging {@link TimeEntry} aggregates and {@link TimeEntryEntity}
+ * rows.
  */
+@UtilityClass
 public final class TimeEntryMapper {
-
-    private TimeEntryMapper() {}
 
     /**
      * Converts a domain aggregate into a managed entity.
@@ -18,21 +19,21 @@ public final class TimeEntryMapper {
      * @return entity snapshot.
      */
     public static TimeEntryEntity toEntity(final TimeEntry entry) {
-        final TimeEntryEntity entity = new TimeEntryEntity();
-        entity.setId(entry.id());
-        entity.setFirmId(entry.firmId());
-        entity.setUserId(entry.userId());
-        entity.setCustomerId(entry.customerId());
-        entity.setProjectId(entry.projectId());
-        entity.setMatterId(entry.matterId());
-        entity.setNarrative(entry.narrative());
-        entity.setDurationMinutes(entry.durationMinutes());
-        entity.setStatus(entry.status());
-        entity.setCreatedAt(entry.createdAt());
-        entity.setUpdatedAt(entry.updatedAt());
-        entity.setApprovedAt(entry.approvedAt());
-        entity.setApprovedBy(entry.approvedBy());
-        return entity;
+        return TimeEntryEntity.builder()
+                .id(entry.getId())
+                .firmId(entry.getFirmId())
+                .userId(entry.getUserId())
+                .customerId(entry.getCustomerId())
+                .projectId(entry.getProjectId())
+                .matterId(entry.getMatterId())
+                .narrative(entry.getNarrative())
+                .durationMinutes(entry.getDurationMinutes())
+                .status(entry.getStatus())
+                .createdAt(entry.getCreatedAt())
+                .updatedAt(entry.getUpdatedAt())
+                .approvedBy(entry.getApprovedBy())
+                .approvedAt(entry.getApprovedAt())
+                .build();
     }
 
     /**
@@ -42,19 +43,20 @@ public final class TimeEntryMapper {
      * @return aggregate snapshot.
      */
     public static TimeEntry toDomain(final TimeEntryEntity entity) {
-        return TimeEntry.rehydrate(
-                entity.getId(),
-                entity.getFirmId(),
-                entity.getUserId(),
-                entity.getCustomerId(),
-                entity.getProjectId(),
-                entity.getMatterId(),
-                entity.getNarrative(),
-                entity.getDurationMinutes(),
-                entity.getStatus(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                entity.getApprovedBy(),
-                entity.getApprovedAt());
+        return TimeEntry.builder()
+                .id(entity.getId())
+                .firmId(entity.getFirmId())
+                .userId(entity.getUserId())
+                .customerId(entity.getCustomerId())
+                .projectId(entity.getProjectId())
+                .matterId(entity.getMatterId())
+                .narrative(entity.getNarrative())
+                .durationMinutes(entity.getDurationMinutes())
+                .status(entity.getStatus())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .approvedBy(entity.getApprovedBy())
+                .approvedAt(entity.getApprovedAt())
+                .build();
     }
 }

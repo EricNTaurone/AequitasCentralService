@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.controller;
 
 import java.util.List;
 import java.util.Optional;

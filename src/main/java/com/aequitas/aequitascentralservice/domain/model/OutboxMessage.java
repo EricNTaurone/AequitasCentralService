@@ -3,6 +3,8 @@ package com.aequitas.aequitascentralservice.domain.model;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.Builder;
+
 /**
  * Domain representation of an outbox row awaiting relay.
  *
@@ -14,6 +16,7 @@ import java.util.UUID;
  * @param occurredAt time when domain change happened.
  * @param publishedAt timestamp when the relay successfully published the event.
  */
+@Builder
 public record OutboxMessage(
         UUID id,
         UUID firmId,

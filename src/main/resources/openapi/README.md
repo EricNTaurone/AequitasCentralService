@@ -23,6 +23,13 @@ The API specification documents two main resource groups:
 - **GET** `/api/v1/users` - List all users (filtered by role)
 - **PATCH** `/api/v1/users/{id}/role` - Update user role assignment
 
+### Firm Details API (`/api/v1/firms`)
+- **GET** `/api/v1/firms/me` - Get the authenticated user's firm
+- **GET** `/api/v1/firms/{id}` - Get details associated with a particular firm
+- **GET** `/api/v1/firms` - Get a paginated list of firms
+- **POST** `/api/v1/firms` - Create a new firm
+_ **PATCH** `/api/v1/firms/{id}` - Update a firm's details
+
 ## Code Generation
 
 The OpenAPI specification is used to generate DTOs and API interfaces via the `openapi-generator-maven-plugin`.

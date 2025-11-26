@@ -1,13 +1,21 @@
 package com.aequitas.aequitascentralservice.domain.model;
 
-import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
+
 /**
  * Aggregate root encapsulating the lifecycle of a tenant-scoped time entry.
  */
+@Builder
+@AllArgsConstructor
+@Value
 public final class TimeEntry {
 
     private final UUID id;
@@ -23,35 +31,6 @@ public final class TimeEntry {
     private final Instant updatedAt;
     private final UUID approvedBy;
     private final Instant approvedAt;
-
-    private TimeEntry(
-            final UUID id,
-            final UUID firmId,
-            final UUID userId,
-            final UUID customerId,
-            final UUID projectId,
-            final UUID matterId,
-            final String narrative,
-            final int durationMinutes,
-            final EntryStatus status,
-            final Instant createdAt,
-            final Instant updatedAt,
-            final UUID approvedBy,
-            final Instant approvedAt) {
-        this.id = id;
-        this.firmId = firmId;
-        this.userId = userId;
-        this.customerId = customerId;
-        this.projectId = projectId;
-        this.matterId = matterId;
-        this.narrative = narrative;
-        this.durationMinutes = durationMinutes;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.approvedBy = approvedBy;
-        this.approvedAt = approvedAt;
-    }
 
     /**
      * Rehydrates an aggregate from persistence.
@@ -85,20 +64,21 @@ public final class TimeEntry {
             final Instant updatedAt,
             final UUID approvedBy,
             final Instant approvedAt) {
-        return new TimeEntry(
-                id,
-                firmId,
-                userId,
-                customerId,
-                projectId,
-                matterId,
-                narrative,
-                durationMinutes,
-                status,
-                createdAt,
-                updatedAt,
-                approvedBy,
-                approvedAt);
+        return TimeEntry.builder()
+                .id(id)
+                .firmId(firmId)
+                .userId(userId)
+                .customerId(customerId)
+                .projectId(projectId)
+                .matterId(matterId)
+                .narrative(narrative)
+                .durationMinutes(durationMinutes)
+                .status(status)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .approvedBy(approvedBy)
+                .approvedAt(approvedAt)
+                .build();
     }
 
     /**
@@ -246,96 +226,5 @@ public final class TimeEntry {
                 now,
                 approverId,
                 now);
-    }
-
-    /**
-     * @return aggregate identifier.
-     */
-    public UUID id() {
-        return id;
-    }
-
-    /**
-     * @return tenant identifier.
-     */
-    public UUID firmId() {
-        return firmId;
-    }
-
-    /**
-     * @return owner identifier.
-     */
-    public UUID userId() {
-        return userId;
-    }
-
-    /**
-     * @return associated customer identifier.
-     */
-    public UUID customerId() {
-        return customerId;
-    }
-
-    /**
-     * @return associated project identifier.
-     */
-    public UUID projectId() {
-        return projectId;
-    }
-
-    /**
-     * @return downstream matter identifier if present.
-     */
-    public UUID matterId() {
-        return matterId;
-    }
-
-    /**
-     * @return narrative text.
-     */
-    public String narrative() {
-        return narrative;
-    }
-
-    /**
-     * @return duration in minutes.
-     */
-    public int durationMinutes() {
-        return durationMinutes;
-    }
-
-    /**
-     * @return lifecycle status.
-     */
-    public EntryStatus status() {
-        return status;
-    }
-
-    /**
-     * @return creation timestamp.
-     */
-    public Instant createdAt() {
-        return createdAt;
-    }
-
-    /**
-     * @return last update timestamp.
-     */
-    public Instant updatedAt() {
-        return updatedAt;
-    }
-
-    /**
-     * @return approver identifier if approved.
-     */
-    public UUID approvedBy() {
-        return approvedBy;
-    }
-
-    /**
-     * @return approval timestamp if approved.
-     */
-    public Instant approvedAt() {
-        return approvedAt;
     }
 }

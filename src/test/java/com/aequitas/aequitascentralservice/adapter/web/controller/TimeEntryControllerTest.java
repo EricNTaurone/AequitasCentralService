@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.controller;
 
 import java.time.Instant;
 import java.util.List;
@@ -216,16 +216,16 @@ class TimeEntryControllerTest {
     void GIVEN_existingEntry_WHEN_findById_THEN_returnsResponseEntity() {
         // GIVEN
         TimeEntry entry = sampleEntry(EntryStatus.APPROVED);
-        when(queryPort.findById(entry.id())).thenReturn(Optional.of(entry));
+        when(queryPort.findById(entry.getId())).thenReturn(Optional.of(entry));
 
         // WHEN
-        ResponseEntity<TimeEntryResponse> response = controller.findById(entry.id());
+        ResponseEntity<TimeEntryResponse> response = controller.findById(entry.getId());
 
         // THEN
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(entry.id(), response.getBody().getId());
-        verify(queryPort, times(1)).findById(entry.id());
+        assertEquals(entry.getId(), response.getBody().getId());
+        verify(queryPort, times(1)).findById(entry.getId());
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
     }
 

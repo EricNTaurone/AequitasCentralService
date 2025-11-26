@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.mapper;
 
 import java.util.Optional;
 
@@ -58,17 +58,17 @@ public class TimeEntryDtoMapper {
      */
     public static TimeEntryResponse toResponse(final TimeEntry entry) {
         return TimeEntryResponse.builder()
-                .id(entry.id())
-                .customerId(entry.customerId())
-                .projectId(entry.projectId())
-                .matterId(entry.matterId())
-                .userId(entry.userId())
-                .narrative(entry.narrative())
-                .durationMinutes(entry.durationMinutes())
-                .status(EntryStatus.fromValue(entry.status().name()))
-                .createdAt(entry.createdAt())
-                .updatedAt(entry.updatedAt())
-                .approvedAt(entry.approvedAt())
+                .id(entry.getId())
+                .customerId(entry.getCustomerId())
+                .projectId(entry.getProjectId())
+                .matterId(entry.getMatterId())
+                .userId(entry.getUserId())
+                .narrative(entry.getNarrative())
+                .durationMinutes(entry.getDurationMinutes())
+                .status(EntryStatus.fromValue(entry.getStatus().name()))
+                .createdAt(entry.getCreatedAt())
+                .updatedAt(entry.getUpdatedAt())
+                .approvedAt(entry.getApprovedAt())
                 .build();
     }
 }

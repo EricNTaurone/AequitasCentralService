@@ -3,6 +3,9 @@ package com.aequitas.aequitascentralservice.adapter.persistence.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -16,96 +19,45 @@ import lombok.Builder;
  * JPA entity mapping the {@code outbox} table.
  */
 @Entity
-@Table(name = "outbox")
+@Table(name = OutboxEntity.TABLE_NAME)
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class OutboxEntity {
+
+    public static final String TABLE_NAME = "outbox";
+    public static final String FIRM_ID = "firm_id";
+    public static final String AGGREGATE_ID = "aggregate_id";
+    public static final String EVENT_TYPE = "event_type";
+    public static final String EVENT_KEY = "event_key";
+    public static final String PAYLOAD_JSON = "payload_json";
+    public static final String OCCURRED_AT = "occurred_at";
+    public static final String PUBLISHED_AT = "published_at";
 
     @Id
     private UUID id;
 
-    @Column(name = "firm_id", nullable = false)
+    @Column(name = FIRM_ID, nullable = false)
     private UUID firmId;
 
-    @Column(name = "aggregate_id", nullable = false)
+    @Column(name = AGGREGATE_ID, nullable = false)
     private UUID aggregateId;
 
-    @Column(name = "event_type", nullable = false)
+    @Column(name = EVENT_TYPE, nullable = false)
     private String eventType;
 
-    @Column(name = "event_key", nullable = false)
+    @Column(name = EVENT_KEY, nullable = false)
     private String eventKey;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "payload_json", nullable = false, columnDefinition = "jsonb")
+    @Column(name = PAYLOAD_JSON, nullable = false, columnDefinition = "jsonb")
     private String payloadJson;
 
-    @Column(name = "occurred_at", nullable = false)
+    @Column(name = OCCURRED_AT, nullable = false)
     private Instant occurredAt;
 
-    @Column(name = "published_at")
+    @Column(name = PUBLISHED_AT)
     private Instant publishedAt;
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(final UUID id) {
-        this.id = id;
-    }
-
-    public UUID getFirmId() {
-        return firmId;
-    }
-
-    public void setFirmId(final UUID firmId) {
-        this.firmId = firmId;
-    }
-
-    public UUID getAggregateId() {
-        return aggregateId;
-    }
-
-    public void setAggregateId(final UUID aggregateId) {
-        this.aggregateId = aggregateId;
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(final String eventType) {
-        this.eventType = eventType;
-    }
-
-    public String getEventKey() {
-        return eventKey;
-    }
-
-    public void setEventKey(final String eventKey) {
-        this.eventKey = eventKey;
-    }
-
-    public String getPayloadJson() {
-        return payloadJson;
-    }
-
-    public void setPayloadJson(final String payloadJson) {
-        this.payloadJson = payloadJson;
-    }
-
-    public Instant getOccurredAt() {
-        return occurredAt;
-    }
-
-    public void setOccurredAt(final Instant occurredAt) {
-        this.occurredAt = occurredAt;
-    }
-
-    public Instant getPublishedAt() {
-        return publishedAt;
-    }
-
-    public void setPublishedAt(final Instant publishedAt) {
-        this.publishedAt = publishedAt;
-    }
 }

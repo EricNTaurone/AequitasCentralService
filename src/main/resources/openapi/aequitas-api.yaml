@@ -38,6 +38,8 @@ tags:
     description: Operations for creating, updating, and managing time entries
   - name: User Profiles
     description: Operations for managing user profiles and role assignments
+  - name: Firms
+    description: Operations for managing firm information and settings
 
 paths:
   /api/v1/auth/signup:
@@ -522,6 +524,194 @@ paths:
       security:
         - oauth2: []
 
+  /api/v1/firms/me:
+    get:
+      tags:
+        - Firms
+      summary: Get authenticated user's firm
+      description: |
+        Retrieves the authenticated user's firm information, including identity,
+        name, address, and audit timestamps.
+        
+        Accessible by all authenticated users regardless of role.
+      operationId: getCurrentUserFirm
+      responses:
+        '200':
+          description: Firm information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirmResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '404':
+          description: Firm not found
+      security:
+        - oauth2: []
+
+  /api/v1/firms/{id}:
+    get:
+      tags:
+        - Firms
+      summary: Get firm by ID
+      description: |
+        Retrieves detailed information about a specific firm.
+        
+        Only accessible by users with ADMIN role.
+      operationId: getFirmById
+      parameters:
+        - name: id
+          in: path
+          description: Firm identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Firm found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirmResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions (requires admin role)
+        '404':
+          description: Firm not found
+      security:
+        - oauth2: []
+
+    patch:
+      tags:
+        - Firms
+      summary: Update firm details
+      description: |
+        Updates a firm's mutable attributes (name and address).
+        
+        Only accessible by users with ADMIN role within the firm being updated.
+      operationId: updateFirm
+      parameters:
+        - name: id
+          in: path
+          description: Firm identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFirmRequest'
+      responses:
+        '204':
+          description: Firm updated successfully
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions (requires admin role)
+        '404':
+          description: Firm not found
+      security:
+        - oauth2: []
+
+  /api/v1/firms:
+    get:
+      tags:
+        - Firms
+      summary: List firms with pagination
+      description: |
+        Retrieves a paginated list of all firms.
+        
+        Only accessible by system administrators (future super-admin role).
+        Uses cursor-based pagination for stable iteration over large result sets.
+      operationId: listFirms
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of items to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor from previous response
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful list operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirmPageResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+      security:
+        - oauth2: []
+
+    post:
+      tags:
+        - Firms
+      summary: Create a new firm
+      description: |
+        Creates a new firm with the provided name and address.
+        
+        Only accessible by system administrators (future super-admin role).
+      operationId: createFirm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFirmRequest'
+      responses:
+        '201':
+          description: Firm created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid authentication
+        '403':
+          description: Forbidden - insufficient permissions
+        '409':
+          description: Firm with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - oauth2: []
+
 components:
   schemas:
     SignUpRequest:
@@ -845,6 +1035,154 @@ components:
           $ref: '#/components/schemas/Role'
       example:
         role: "MANAGER"
+
+    CreateFirmRequest:
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Firm's legal or operating name
+        address:
+          $ref: '#/components/schemas/Address'
+      example:
+        name: "Smith & Associates Law Firm"
+        address:
+          street: "123 Main Street"
+          city: "New York"
+          state: "NY"
+          postalCode: "10001"
+          country: "USA"
+
+    UpdateFirmRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Optional firm name update
+          nullable: true
+        address:
+          $ref: '#/components/schemas/Address'
+          nullable: true
+      example:
+        name: "Smith & Partners LLP"
+        address:
+          street: "456 Broadway"
+          city: "New York"
+          state: "NY"
+          postalCode: "10013"
+          country: "USA"
+
+    FirmResponse:
+      type: object
+      required:
+        - id
+        - name
+        - address
+        - createdTime
+        - lastUpdateTime
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Firm identifier
+        name:
+          type: string
+          description: Firm's legal or operating name
+        address:
+          $ref: '#/components/schemas/Address'
+        createdTime:
+          type: integer
+          format: int64
+          description: Creation timestamp (epoch milliseconds)
+        lastUpdateTime:
+          type: integer
+          format: int64
+          description: Last update timestamp (epoch milliseconds)
+      example:
+        id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        name: "Smith & Associates Law Firm"
+        address:
+          street: "123 Main Street"
+          city: "New York"
+          state: "NY"
+          postalCode: "10001"
+          country: "USA"
+        createdTime: 1700000000000
+        lastUpdateTime: 1700050000000
+
+    FirmPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/FirmResponse'
+              description: List of firms
+      example:
+        items:
+          - id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+            name: "Smith & Associates"
+            address:
+              street: "123 Main Street"
+              city: "New York"
+              state: "NY"
+              postalCode: "10001"
+              country: "USA"
+            createdTime: 1700000000000
+            lastUpdateTime: 1700050000000
+        nextCursor: "eyJpZCI6ImY0N2FjMTBifQ=="
+        total: 45
+        hasMore: true
+
+    Address:
+      type: object
+      required:
+        - street
+        - city
+        - state
+        - postalCode
+        - country
+      properties:
+        street:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Street address line
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: City name
+        state:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: State, province, or region
+        postalCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Postal or ZIP code
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Country name
+      example:
+        street: "123 Main Street"
+        city: "New York"
+        state: "NY"
+        postalCode: "10001"
+        country: "USA"
 
     IdResponse:
       type: object

@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.controller;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +21,7 @@ import com.aequitas.aequitascentralservice.adapter.web.generated.dto.IdResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryPageResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.TimeEntryResponse;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UpdateTimeEntryRequest;
+import com.aequitas.aequitascentralservice.adapter.web.mapper.TimeEntryDtoMapper;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryCommandPort;
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryQueryPort;
 import com.aequitas.aequitascentralservice.app.service.IdempotencyService;

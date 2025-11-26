@@ -1,4 +1,4 @@
-package com.aequitas.aequitascentralservice.adapter.web;
+package com.aequitas.aequitascentralservice.adapter.web.mapper;
 
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.Role;
 import com.aequitas.aequitascentralservice.adapter.web.generated.dto.UserProfileResponse;

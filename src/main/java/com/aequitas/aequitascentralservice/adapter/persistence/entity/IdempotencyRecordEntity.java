@@ -7,6 +7,11 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -14,95 +19,45 @@ import java.util.UUID;
  * Entity representing stored idempotency executions.
  */
 @Entity
-@Table(name = "idempotency_records")
+@Table(name = IdempotencyRecordEntity.TABLE_NAME)
+@Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class IdempotencyRecordEntity {
+
+    public static final String TABLE_NAME = "idempotency_records";
+    public static final String OPERATION = "operation";
+    public static final String USER_ID = "user_id";
+    public static final String FIRM_ID = "firm_id";
+    public static final String KEY_HASH = "key_hash";
+    public static final String RESPONSE_ID = "response_id";
+    public static final String CREATED_AT = "created_at";
+    public static final String EXPIRES_AT = "expires_at";
 
     @Id
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "operation", nullable = false)
+    @Column(name = OPERATION, nullable = false)
     private IdempotencyOperation operation;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = USER_ID, nullable = false)
     private UUID userId;
 
-    @Column(name = "firm_id", nullable = false)
+    @Column(name = FIRM_ID, nullable = false)
     private UUID firmId;
 
-    @Column(name = "key_hash", nullable = false)
+    @Column(name = KEY_HASH, nullable = false)
     private String keyHash;
 
-    @Column(name = "response_id", nullable = false)
+    @Column(name = RESPONSE_ID, nullable = false)
     private UUID responseId;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = CREATED_AT, nullable = false)
     private Instant createdAt;
 
-    @Column(name = "expires_at", nullable = false)
+    @Column(name = EXPIRES_AT, nullable = false)
     private Instant expiresAt;
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(final UUID id) {
-        this.id = id;
-    }
-
-    public IdempotencyOperation getOperation() {
-        return operation;
-    }
-
-    public void setOperation(final IdempotencyOperation operation) {
-        this.operation = operation;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(final UUID userId) {
-        this.userId = userId;
-    }
-
-    public UUID getFirmId() {
-        return firmId;
-    }
-
-    public void setFirmId(final UUID firmId) {
-        this.firmId = firmId;
-    }
-
-    public String getKeyHash() {
-        return keyHash;
-    }
-
-    public void setKeyHash(final String keyHash) {
-        this.keyHash = keyHash;
-    }
-
-    public UUID getResponseId() {
-        return responseId;
-    }
-
-    public void setResponseId(final UUID responseId) {
-        this.responseId = responseId;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(final Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    public void setExpiresAt(final Instant expiresAt) {
-        this.expiresAt = expiresAt;
-    }
 }

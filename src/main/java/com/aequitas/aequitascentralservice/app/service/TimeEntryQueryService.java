@@ -1,5 +1,11 @@
 package com.aequitas.aequitascentralservice.app.service;
 
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.aequitas.aequitascentralservice.app.port.inbound.TimeEntryQueryPort;
 import com.aequitas.aequitascentralservice.app.port.outbound.CurrentUserPort;
 import com.aequitas.aequitascentralservice.app.port.outbound.TimeEntryRepositoryPort;
@@ -9,10 +15,6 @@ import com.aequitas.aequitascentralservice.domain.pagination.PageRequest;
 import com.aequitas.aequitascentralservice.domain.pagination.PageResult;
 import com.aequitas.aequitascentralservice.domain.value.CurrentUser;
 import com.aequitas.aequitascentralservice.domain.value.Role;
-import java.util.Optional;
-import java.util.UUID;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implements the read side queries for time entries with firm-aware scoping.
@@ -51,7 +53,7 @@ public class TimeEntryQueryService implements TimeEntryQueryPort {
     }
 
     private boolean canObserve(final CurrentUser user, final TimeEntry entry) {
-        return user.role() != Role.EMPLOYEE || entry.userId().equals(user.userId());
+        return user.role() != Role.EMPLOYEE || entry.getUserId().equals(user.userId());
     }
 
     private TimeEntryFilter enrichFilter(final TimeEntryFilter filter, final CurrentUser user) {

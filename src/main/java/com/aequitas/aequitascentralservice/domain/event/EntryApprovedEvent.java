@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.aequitas.aequitascentralservice.constants.EntryFieldConstants;
 import com.aequitas.aequitascentralservice.domain.model.TimeEntry;
 import com.aequitas.aequitascentralservice.domain.value.EntryStatus;
 
@@ -32,20 +33,20 @@ public record EntryApprovedEvent(
      */
     public static EntryApprovedEvent from(final TimeEntry entry) {
         final Map<String, Object> payload = new HashMap<>();
-        payload.put("entryId", entry.id().toString());
-        payload.put("firmId", entry.firmId().toString());
-        payload.put("userId", entry.userId().toString());
-        payload.put("customerId", entry.customerId().toString());
-        payload.put("projectId", entry.projectId().toString());
-        payload.put("matterId", entry.matterId() == null ? null : entry.matterId().toString());
-        payload.put("narrative", entry.narrative());
-        payload.put("durationMinutes", entry.durationMinutes());
-        payload.put("status", EntryStatus.APPROVED.name());
-        payload.put("approvedAt", entry.approvedAt().toString());
+        payload.put(EntryFieldConstants.ENTRY_ID, entry.getId().toString());
+        payload.put(EntryFieldConstants.FIRM_ID, entry.getFirmId().toString());
+        payload.put(EntryFieldConstants.USER_ID, entry.getUserId().toString());
+        payload.put(EntryFieldConstants.CUSTOMER_ID, entry.getCustomerId().toString());
+        payload.put(EntryFieldConstants.PROJECT_ID, entry.getProjectId().toString());
+        payload.put(EntryFieldConstants.MATTER_ID, entry.getMatterId() == null ? null : entry.getMatterId().toString());
+        payload.put(EntryFieldConstants.NARRATIVE, entry.getNarrative());
+        payload.put(EntryFieldConstants.DURATION_MINUTES, entry.getDurationMinutes());
+        payload.put(EntryFieldConstants.STATUS, EntryStatus.APPROVED.name());
+        payload.put(EntryFieldConstants.APPROVED_AT, entry.getApprovedAt().toString());
         return new EntryApprovedEvent(
                 UUID.randomUUID(),
-                entry.approvedAt(),
-                entry.firmId(),
+                entry.getApprovedAt(),
+                entry.getFirmId(),
                 Collections.unmodifiableMap(payload));
     }
 

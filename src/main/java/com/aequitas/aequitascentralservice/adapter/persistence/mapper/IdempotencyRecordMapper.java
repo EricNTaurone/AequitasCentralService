@@ -3,12 +3,13 @@ package com.aequitas.aequitascentralservice.adapter.persistence.mapper;
 import com.aequitas.aequitascentralservice.adapter.persistence.entity.IdempotencyRecordEntity;
 import com.aequitas.aequitascentralservice.domain.model.IdempotencyRecord;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * Mapper bridging idempotency persistence entities and domain records.
  */
+@UtilityClass
 public final class IdempotencyRecordMapper {
-
-    private IdempotencyRecordMapper() {}
 
     /**
      * Converts to domain.
@@ -17,15 +18,16 @@ public final class IdempotencyRecordMapper {
      * @return domain record.
      */
     public static IdempotencyRecord toDomain(final IdempotencyRecordEntity entity) {
-        return new IdempotencyRecord(
-                entity.getId(),
-                entity.getOperation(),
-                entity.getUserId(),
-                entity.getFirmId(),
-                entity.getKeyHash(),
-                entity.getResponseId(),
-                entity.getCreatedAt(),
-                entity.getExpiresAt());
+        return IdempotencyRecord.builder()
+                .id(entity.getId())
+                .operation(entity.getOperation())
+                .userId(entity.getUserId())
+                .firmId(entity.getFirmId())
+                .keyHash(entity.getKeyHash())
+                .responseId(entity.getResponseId())
+                .createdAt(entity.getCreatedAt())
+                .expiresAt(entity.getExpiresAt())
+                .build();
     }
 
     /**
@@ -35,15 +37,15 @@ public final class IdempotencyRecordMapper {
      * @return entity snapshot.
      */
     public static IdempotencyRecordEntity toEntity(final IdempotencyRecord record) {
-        final IdempotencyRecordEntity entity = new IdempotencyRecordEntity();
-        entity.setId(record.id());
-        entity.setOperation(record.operation());
-        entity.setUserId(record.userId());
-        entity.setFirmId(record.firmId());
-        entity.setKeyHash(record.keyHash());
-        entity.setResponseId(record.responseId());
-        entity.setCreatedAt(record.createdAt());
-        entity.setExpiresAt(record.expiresAt());
-        return entity;
+        return IdempotencyRecordEntity.builder()
+                .id(record.id())
+                .operation(record.operation())
+                .userId(record.userId())
+                .firmId(record.firmId())
+                .keyHash(record.keyHash())
+                .responseId(record.responseId())
+                .createdAt(record.createdAt())
+                .expiresAt(record.expiresAt())
+                .build();
     }
 }

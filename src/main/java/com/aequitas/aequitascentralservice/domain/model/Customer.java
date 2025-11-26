@@ -1,5 +1,7 @@
 package com.aequitas.aequitascentralservice.domain.model;
 
+import lombok.Builder;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -11,5 +13,6 @@ import java.util.UUID;
  * @param name customer display name.
  * @param createdAt creation timestamp.
  */
+@Builder
 public record Customer(UUID id, UUID firmId, String name, Instant createdAt) {
 }
