@@ -42,7 +42,7 @@
         <common-lang3.version>3.20.0</common-lang3.version>
         <pitest.version>1.22.0</pitest.version>
         <pitest-junit5-plugin.version>1.2.3</pitest-junit5-plugin.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <argLine></argLine>
     </properties>
 
@@ -154,6 +154,13 @@
                         <arg>-Xlint:-processing</arg>
                         <arg>-Xlint:-options</arg>
                     </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 
