@@ -1,12 +1,15 @@
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:6543/aequitas_central
-    username: aequitas
-    password: aequitas
-  jpa:
-    show-sql: true
+    datasource:
+        url: jdbc:postgresql://localhost:6543/aequitas_central
+        username: aequitas
+        password: aequitas
+    jpa:
+        show-sql: false
+        properties:
+            hibernate:
+                show-sql: false
 outbox:
-  relay-interval: PT2S
+    relay-interval: PT2S
 logging:
-  level:
-    '[org.hibernate.sql]': WARN
+    level:
+        "[org.hibernate.sql]": WARN
