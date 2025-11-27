@@ -20,7 +20,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import com.aequitas.aequitascentralservice.config.SupabaseProperties;
 
 /**
- * Production-grade tests for {@link SecurityConfig}.
+ * Production-grade JUnit 5 tests for {@link SecurityConfig}.
+ * Tests JWT decoder configuration and authority extraction from JWT claims.
  */
 @ExtendWith(MockitoExtension.class)
 class SecurityConfigTest {
@@ -90,7 +91,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -110,7 +111,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -130,7 +131,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -150,7 +151,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -171,7 +172,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -192,7 +193,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -211,7 +212,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result).isNotNull().isEmpty();
@@ -228,7 +229,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result).isNotNull().isEmpty();
@@ -245,7 +246,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result).isNotNull().isEmpty();
@@ -266,7 +267,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -289,7 +290,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -312,7 +313,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -336,7 +337,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -359,7 +360,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -381,7 +382,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result)
@@ -401,7 +402,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result).isNotNull().isEmpty();
@@ -419,7 +420,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result).isNotNull().isEmpty();
@@ -438,7 +439,7 @@ class SecurityConfigTest {
         final JwtAuthenticationConverter converter = getJwtAuthenticationConverter(securityConfig);
 
         // WHEN
-        final Collection<GrantedAuthority> result = converter.convert(jwt).getAuthorities();
+        final Collection<GrantedAuthority> result = filterRoleAuthorities(converter.convert(jwt).getAuthorities());
 
         // THEN
         assertThat(result).isNotNull().isEmpty();
@@ -451,11 +452,21 @@ class SecurityConfigTest {
                     SecurityConfig.class.getDeclaredMethod("jwtAuthenticationConverter");
             method.setAccessible(true);
             return (JwtAuthenticationConverter) method.invoke(config);
-        } catch (NoSuchMethodException
+        } catch (final NoSuchMethodException
                 | IllegalAccessException
                 | java.lang.reflect.InvocationTargetException e) {
             throw new RuntimeException("Failed to get JwtAuthenticationConverter", e);
         }
+    }
+
+    /**
+     * Filters authorities to only include SimpleGrantedAuthority (role-based) authorities.
+     * This excludes default Spring Security authorities like FactorGrantedAuthority.
+     */
+    private Collection<GrantedAuthority> filterRoleAuthorities(final Collection<GrantedAuthority> authorities) {
+        return authorities.stream()
+                .filter(authority -> authority instanceof SimpleGrantedAuthority)
+                .toList();
     }
 }
 

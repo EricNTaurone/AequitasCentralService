@@ -16,7 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class SupabaseConfig {
 
     @Bean
-    public RestClient supabaseRestClient(final RestClient.Builder builder, final SupabaseProperties properties) {
+    public RestClient supabaseRestClient(final SupabaseProperties properties) {
         if (!StringUtils.hasText(properties.url())) {
             throw new IllegalStateException("supabase.url must be configured");
         }
@@ -28,7 +28,7 @@ public class SupabaseConfig {
                         .path("/auth/v1")
                         .build()
                         .toString();
-        return builder
+        return RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("apikey", properties.serviceKey())
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.serviceKey())

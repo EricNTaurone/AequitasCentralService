@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /workspace
 COPY mvnw mvnw
 COPY .mvn .mvn
@@ -7,7 +7,7 @@ RUN ./mvnw -q -B dependency:go-offline
 COPY src src
 RUN ./mvnw -q -B package -DskipTests
 
-FROM gcr.io/distroless/java21-debian12:nonroot
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 ENV SPRING_PROFILES_ACTIVE=prod
 COPY --from=builder /workspace/target/aequitascentralservice-0.1.0-SNAPSHOT.jar app.jar

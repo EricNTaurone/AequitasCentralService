@@ -102,7 +102,6 @@ public class SecurityConfig {
         return java.util.List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
-    @SuppressWarnings("unchecked")
     private String resolveRole(final Jwt jwt) {
         final String role = jwt.getClaimAsString("role");
         if (StringUtils.hasText(role)) {
