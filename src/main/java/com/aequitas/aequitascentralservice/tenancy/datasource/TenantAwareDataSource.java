@@ -37,20 +37,33 @@ public class TenantAwareDataSource extends AbstractDataSource {
         if (user == null) {
             return connection;
         }
-        setSessionVariables(connection, user);
-        return (Connection)
-                Proxy.newProxyInstance(
-                        connection.getClass().getClassLoader(),
-                        new Class<?>[] {Connection.class},
-                        new ResetOnCloseHandler(connection));
+        try {
+            setSessionVariables(connection, user);
+            return (Connection)
+                    Proxy.newProxyInstance(
+                            connection.getClass().getClassLoader(),
+                            new Class<?>[] {Connection.class},
+                            new ResetOnCloseHandler(connection));
+        } catch (SQLException ex) {
+            connection.close();
+            throw ex;
+        }
     }
 
     private void setSessionVariables(final Connection connection, final CurrentUser user)
             throws SQLException {
-        try (var statement = connection.createStatement()) {
-            statement.execute("SET app.current_firm_id = '" + user.firmId() + "'");
-            statement.execute("SET app.current_user_id = '" + user.userId() + "'");
-            statement.execute("SET app.current_role = '" + user.role().name() + "'");
+        try (var statement = connection.prepareStatement("SELECT set_config(?, ?, false)")) {
+            statement.setString(1, "app.current_firm_id");
+            statement.setString(2, user.firmId().toString());
+            statement.execute();
+
+            statement.setString(1, "app.current_user_id");
+            statement.setString(2, user.userId().toString());
+            statement.execute();
+
+            statement.setString(1, "app.current_role");
+            statement.setString(2, user.role().name());
+            statement.execute();
         }
     }
 
@@ -66,7 +79,16 @@ public class TenantAwareDataSource extends AbstractDataSource {
         public Object invoke(final Object proxy, final Method method, final Object[] args)
                 throws Throwable {
             if ("close".equals(method.getName())) {
-                resetSessionVariables();
+                try {
+                    resetSessionVariables();
+                } catch (SQLException ex) {
+                    try {
+                        method.invoke(target, args);
+                    } catch (Throwable t) {
+                        ex.addSuppressed(t);
+                    }
+                    throw ex;
+                }
             }
             return method.invoke(target, args);
         }

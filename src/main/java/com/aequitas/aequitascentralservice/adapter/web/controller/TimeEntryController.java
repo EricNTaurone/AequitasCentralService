@@ -167,6 +167,7 @@ public class TimeEntryController {
                 = idempotencyService.execute(
                         idempotencyKey,
                         IdempotencyOperation.TIME_ENTRY_CREATE,
+                        request,
                         () -> commandPort.create(TimeEntryDtoMapper.toCommand(request)));
         return ResponseEntity.status(HttpStatus.CREATED).body(new IdResponse(id));
     }
@@ -304,6 +305,7 @@ public class TimeEntryController {
         idempotencyService.execute(
                 idempotencyKey,
                 IdempotencyOperation.TIME_ENTRY_APPROVE,
+                id,
                 () -> {
                     commandPort.approve(id);
                     return id;

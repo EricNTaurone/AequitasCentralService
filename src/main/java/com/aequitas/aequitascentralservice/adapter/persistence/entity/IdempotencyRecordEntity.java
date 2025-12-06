@@ -31,6 +31,7 @@ public class IdempotencyRecordEntity {
     public static final String USER_ID = "user_id";
     public static final String FIRM_ID = "firm_id";
     public static final String KEY_HASH = "key_hash";
+    public static final String PAYLOAD_HASH = "payload_hash";
     public static final String RESPONSE_ID = "response_id";
     public static final String CREATED_AT = "created_at";
     public static final String EXPIRES_AT = "expires_at";
@@ -50,6 +51,9 @@ public class IdempotencyRecordEntity {
 
     @Column(name = KEY_HASH, nullable = false)
     private String keyHash;
+
+    @Column(name = PAYLOAD_HASH, nullable = false)
+    private String payloadHash;
 
     @Column(name = RESPONSE_ID, nullable = false)
     private UUID responseId;

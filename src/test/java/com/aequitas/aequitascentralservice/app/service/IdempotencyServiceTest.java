@@ -11,12 +11,14 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -31,6 +33,8 @@ import com.aequitas.aequitascentralservice.domain.model.IdempotencyRecord;
 import com.aequitas.aequitascentralservice.domain.value.CurrentUser;
 import com.aequitas.aequitascentralservice.domain.value.IdempotencyOperation;
 import com.aequitas.aequitascentralservice.domain.value.Role;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Tests for {@link IdempotencyService}.
@@ -46,6 +50,8 @@ class IdempotencyServiceTest {
     private static final Instant TEST_NOW = Instant.parse("2024-01-01T00:00:00Z");
     private static final String TEST_KEY = "hash";
     private static final String TEST_KEY_2 = "key-123";
+    private static final String TEST_PAYLOAD = "payload";
+    private static final String TEST_PAYLOAD_JSON = "\"payload\"";
     private static final IdempotencyOperation TEST_OPERATION = IdempotencyOperation.TIME_ENTRY_CREATE;
     private static final IdempotencyOperation TEST_OPERATION_2 = IdempotencyOperation.TIME_ENTRY_APPROVE;
 
@@ -58,15 +64,19 @@ class IdempotencyServiceTest {
     private CurrentUserPort currentUserPort;
     @Mock
     private ClockPort clockPort;
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private IdempotencyService service;
 
     @Test
-    void GIVEN_existingValidRecord_WHEN_execute_THEN_returnCachedResponse() {
+    void GIVEN_existingValidRecord_WHEN_execute_THEN_returnCachedResponse() throws JsonProcessingException {
         // GIVEN
         CurrentUser currentUser = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.EMPLOYEE);
         String hashedKey = hashKey(TEST_KEY);
+        String hashedPayload = hashKey(TEST_PAYLOAD_JSON);
+        
         IdempotencyRecord record =
                 new IdempotencyRecord(
                         TEST_RECORD_ID,
@@ -74,11 +84,14 @@ class IdempotencyServiceTest {
                         currentUser.userId(),
                         currentUser.firmId(),
                         hashedKey,
+                        hashedPayload,
                         TEST_CACHED_ID,
                         TEST_NOW,
                         TEST_NOW.plusSeconds(3600));
+        
         when(currentUserPort.currentUser()).thenReturn(currentUser);
         when(clockPort.now()).thenReturn(TEST_NOW);
+        when(objectMapper.writeValueAsString(TEST_PAYLOAD)).thenReturn(TEST_PAYLOAD_JSON);
         when(repositoryPort.find(TEST_OPERATION, currentUser.userId(), hashedKey))
                 .thenReturn(Optional.of(record));
 
@@ -86,6 +99,7 @@ class IdempotencyServiceTest {
         UUID result = service.execute(
                 TEST_KEY,
                 TEST_OPERATION,
+                TEST_PAYLOAD,
                 () -> {
                     throw new IllegalStateException("should not be invoked");
                 });
@@ -101,12 +115,53 @@ class IdempotencyServiceTest {
     }
 
     @Test
-    void GIVEN_noExistingRecord_WHEN_execute_THEN_persistAndReturnNewResponse() {
+    void GIVEN_existingRecordWithDifferentPayload_WHEN_execute_THEN_throwException() throws JsonProcessingException {
+        // GIVEN
+        CurrentUser currentUser = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.EMPLOYEE);
+        String hashedKey = hashKey(TEST_KEY);
+        String hashedPayload = hashKey(TEST_PAYLOAD_JSON);
+        String differentPayload = "different";
+        String differentPayloadJson = "\"different\"";
+        
+        IdempotencyRecord record =
+                new IdempotencyRecord(
+                        TEST_RECORD_ID,
+                        TEST_OPERATION,
+                        currentUser.userId(),
+                        currentUser.firmId(),
+                        hashedKey,
+                        hashedPayload,
+                        TEST_CACHED_ID,
+                        TEST_NOW,
+                        TEST_NOW.plusSeconds(3600));
+        
+        when(currentUserPort.currentUser()).thenReturn(currentUser);
+        when(clockPort.now()).thenReturn(TEST_NOW);
+        when(objectMapper.writeValueAsString(differentPayload)).thenReturn(differentPayloadJson);
+        when(repositoryPort.find(TEST_OPERATION, currentUser.userId(), hashedKey))
+                .thenReturn(Optional.of(record));
+
+        // WHEN & THEN
+        assertThrows(IllegalArgumentException.class, () -> 
+            service.execute(
+                TEST_KEY,
+                TEST_OPERATION,
+                differentPayload,
+                () -> TEST_NEW_ID
+            )
+        );
+    }
+
+    @Test
+    void GIVEN_noExistingRecord_WHEN_execute_THEN_persistAndReturnNewResponse() throws JsonProcessingException {
         // GIVEN
         CurrentUser currentUser = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.EMPLOYEE);
         String hashedKey = hashKey(TEST_KEY_2);
+        String hashedPayload = hashKey(TEST_PAYLOAD_JSON);
+        
         when(currentUserPort.currentUser()).thenReturn(currentUser);
         when(clockPort.now()).thenReturn(TEST_NOW);
+        when(objectMapper.writeValueAsString(TEST_PAYLOAD)).thenReturn(TEST_PAYLOAD_JSON);
         when(repositoryPort.find(TEST_OPERATION_2, currentUser.userId(), hashedKey))
                 .thenReturn(Optional.empty());
 
@@ -115,6 +170,7 @@ class IdempotencyServiceTest {
                 service.execute(
                         TEST_KEY_2,
                         TEST_OPERATION_2,
+                        TEST_PAYLOAD,
                         () -> TEST_NEW_ID);
 
         // THEN
@@ -130,6 +186,7 @@ class IdempotencyServiceTest {
         assertEquals(currentUser.userId(), savedRecord.userId());
         assertEquals(currentUser.firmId(), savedRecord.firmId());
         assertEquals(hashedKey, savedRecord.keyHash());
+        assertEquals(hashedPayload, savedRecord.payloadHash());
         assertSame(TEST_NEW_ID, savedRecord.responseId());
         assertEquals(TEST_NOW, savedRecord.createdAt());
         assertEquals(TEST_NOW.plusSeconds(86400), savedRecord.expiresAt());
@@ -137,10 +194,11 @@ class IdempotencyServiceTest {
     }
 
     @Test
-    void GIVEN_expiredRecord_WHEN_execute_THEN_persistAndReturnNewResponse() {
+    void GIVEN_expiredRecord_WHEN_execute_THEN_persistAndReturnNewResponse() throws JsonProcessingException {
         // GIVEN
         CurrentUser currentUser = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.EMPLOYEE);
         String hashedKey = hashKey(TEST_KEY);
+        String hashedPayload = hashKey(TEST_PAYLOAD_JSON);
         Instant expiredTime = TEST_NOW.minusSeconds(3600);
         IdempotencyRecord expiredRecord =
                 new IdempotencyRecord(
@@ -149,16 +207,18 @@ class IdempotencyServiceTest {
                         currentUser.userId(),
                         currentUser.firmId(),
                         hashedKey,
+                        hashedPayload,
                         TEST_CACHED_ID,
                         expiredTime.minusSeconds(86400),
                         expiredTime);
         when(currentUserPort.currentUser()).thenReturn(currentUser);
         when(clockPort.now()).thenReturn(TEST_NOW);
+        when(objectMapper.writeValueAsString(TEST_PAYLOAD)).thenReturn(TEST_PAYLOAD_JSON);
         when(repositoryPort.find(TEST_OPERATION, currentUser.userId(), hashedKey))
                 .thenReturn(Optional.of(expiredRecord));
 
         // WHEN
-        UUID result = service.execute(TEST_KEY, TEST_OPERATION, () -> TEST_NEW_ID);
+        UUID result = service.execute(TEST_KEY, TEST_OPERATION, TEST_PAYLOAD, () -> TEST_NEW_ID);
 
         // THEN
         assertEquals(TEST_NEW_ID, result);
@@ -173,6 +233,7 @@ class IdempotencyServiceTest {
         assertEquals(currentUser.userId(), savedRecord.userId());
         assertEquals(currentUser.firmId(), savedRecord.firmId());
         assertEquals(hashedKey, savedRecord.keyHash());
+        assertEquals(hashedPayload, savedRecord.payloadHash());
         assertSame(TEST_NEW_ID, savedRecord.responseId());
         assertEquals(TEST_NOW, savedRecord.createdAt());
         assertEquals(TEST_NOW.plusSeconds(86400), savedRecord.expiresAt());
@@ -185,7 +246,7 @@ class IdempotencyServiceTest {
         // No mocking needed - null key bypasses all port calls
 
         // WHEN
-        UUID result = service.execute(null, TEST_OPERATION, () -> TEST_NEW_ID);
+        UUID result = service.execute(null, TEST_OPERATION, TEST_PAYLOAD, () -> TEST_NEW_ID);
 
         // THEN
         assertEquals(TEST_NEW_ID, result);
@@ -202,7 +263,7 @@ class IdempotencyServiceTest {
         String blankKey = "   ";
 
         // WHEN
-        UUID result = service.execute(blankKey, TEST_OPERATION, () -> TEST_NEW_ID);
+        UUID result = service.execute(blankKey, TEST_OPERATION, TEST_PAYLOAD, () -> TEST_NEW_ID);
 
         // THEN
         assertEquals(TEST_NEW_ID, result);
@@ -219,7 +280,7 @@ class IdempotencyServiceTest {
         String emptyKey = "";
 
         // WHEN
-        UUID result = service.execute(emptyKey, TEST_OPERATION, () -> TEST_NEW_ID);
+        UUID result = service.execute(emptyKey, TEST_OPERATION, TEST_PAYLOAD, () -> TEST_NEW_ID);
 
         // THEN
         assertEquals(TEST_NEW_ID, result);

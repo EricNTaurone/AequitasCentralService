@@ -26,6 +26,7 @@ public record IdempotencyRecord(
         UUID userId,
         UUID firmId,
         String keyHash,
+        String payloadHash,
         UUID responseId,
         Instant createdAt,
         Instant expiresAt) {

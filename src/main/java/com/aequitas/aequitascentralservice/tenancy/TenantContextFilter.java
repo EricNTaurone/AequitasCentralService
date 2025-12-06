@@ -31,8 +31,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
             final HttpServletResponse response,
             final FilterChain filterChain)
             throws ServletException, IOException {
-        if (request.getRequestURI().startsWith("/actuator")
-                || request.getRequestURI().startsWith("/v3/api-docs")
+        if (request.getRequestURI().startsWith("/v3/api-docs")
                 || request.getRequestURI().startsWith("/swagger-ui")) {
             filterChain.doFilter(request, response);
             return;

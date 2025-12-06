@@ -97,11 +97,12 @@ class TimeEntryControllerTest {
         request.setMatterId(MATTER_ID);
         when(commandPort.create(createCommandCaptor.capture())).thenReturn(ENTRY_ID);
         doAnswer(invocation -> {
-            Supplier<UUID> supplier = invocation.getArgument(2);
+            Supplier<UUID> supplier = invocation.getArgument(3);
             return supplier.get();
         })
                 .when(idempotencyService)
                 .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_CREATE),
+                        eq(request),
                         org.mockito.ArgumentMatchers.any());
 
         // WHEN
@@ -118,7 +119,7 @@ class TimeEntryControllerTest {
         assertEquals(NARRATIVE, command.narrative());
         assertEquals(DURATION, command.durationMinutes());
         verify(idempotencyService, times(1))
-                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_CREATE), supplierCaptor.capture());
+                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_CREATE), eq(request), supplierCaptor.capture());
         assertNotNull(supplierCaptor.getValue());
         verify(commandPort, times(1)).create(command);
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
@@ -130,11 +131,12 @@ class TimeEntryControllerTest {
         CreateTimeEntryRequest request = new CreateTimeEntryRequest(CUSTOMER_ID, PROJECT_ID, NARRATIVE, DURATION);
         when(commandPort.create(createCommandCaptor.capture())).thenReturn(ENTRY_ID);
         doAnswer(invocation -> {
-            Supplier<UUID> supplier = invocation.getArgument(2);
+            Supplier<UUID> supplier = invocation.getArgument(3);
             return supplier.get();
         })
                 .when(idempotencyService)
                 .execute(eq(null), eq(IdempotencyOperation.TIME_ENTRY_CREATE),
+                        eq(request),
                         org.mockito.ArgumentMatchers.any());
 
         // WHEN
@@ -145,7 +147,7 @@ class TimeEntryControllerTest {
         assertNotNull(response.getBody());
         assertEquals(ENTRY_ID, response.getBody().getId());
         verify(idempotencyService, times(1))
-                .execute(eq(null), eq(IdempotencyOperation.TIME_ENTRY_CREATE), org.mockito.ArgumentMatchers.any());
+                .execute(eq(null), eq(IdempotencyOperation.TIME_ENTRY_CREATE), eq(request), org.mockito.ArgumentMatchers.any());
         verify(commandPort, times(1)).create(org.mockito.ArgumentMatchers.any());
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
     }
@@ -193,11 +195,12 @@ class TimeEntryControllerTest {
     void GIVEN_approvalRequest_WHEN_approve_THEN_idempotencyServiceAndCommandPortInvoked() {
         // GIVEN
         doAnswer(invocation -> {
-            Supplier<UUID> supplier = invocation.getArgument(2);
+            Supplier<UUID> supplier = invocation.getArgument(3);
             return supplier.get();
         })
                 .when(idempotencyService)
                 .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_APPROVE),
+                        eq(ENTRY_ID),
                         org.mockito.ArgumentMatchers.any());
 
         // WHEN
@@ -206,7 +209,7 @@ class TimeEntryControllerTest {
         // THEN
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(idempotencyService, times(1))
-                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_APPROVE), supplierCaptor.capture());
+                .execute(eq(IDEMPOTENCY_KEY), eq(IdempotencyOperation.TIME_ENTRY_APPROVE), eq(ENTRY_ID), supplierCaptor.capture());
         assertNotNull(supplierCaptor.getValue());
         verify(commandPort, times(1)).approve(ENTRY_ID);
         verifyNoMoreInteractions(commandPort, queryPort, idempotencyService);
