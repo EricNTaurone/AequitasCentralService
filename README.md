@@ -74,23 +74,34 @@ Aequitas Central Service follows **hexagonal architecture** (ports and adapters)
 
 ```
 src/main/java/com/aequitas/aequitascentralservice/
+├── AequitasCentralServiceApplication.java  # Spring Boot main class
 ├── adapter/
-│   ├── persistence/          # JPA entities, repositories, outbox relay
-│   ├── security/             # JWT to CurrentUser mapping
+│   ├── outbox/               # Outbox pattern implementation for events
+│   ├── persistence/          # JPA entities, repositories, database adapters
+│   ├── security/             # JWT to CurrentUser mapping, auth adapters
+│   ├── supabase/             # Supabase authentication integration
 │   └── web/                  # REST controllers, DTOs, exception handlers
 ├── app/
 │   ├── port/                 # Inbound/outbound contracts (interfaces)
 │   └── service/              # Domain use cases, idempotency logic
-├── domain/                   # Aggregates, commands, domain events
-├── security/                 # OAuth2 resource server configuration
-├── tenancy/                  # Thread-local context, tenant-aware datasource
 ├── config/                   # Application configuration beans
-└── logging/                  # Correlation ID filter, structured logging
+├── constants/                # Application-wide constants and enums
+├── domain/                   # Aggregates, commands, domain events
+├── logging/                  # Correlation ID filter, structured logging
+├── security/                 # OAuth2 resource server configuration
+└── tenancy/                  # Thread-local context, tenant-aware datasource
 
 src/main/resources/
-├── application.yml           # Spring Boot configuration
+├── application.properties    # Base Spring Boot properties
+├── application.yml           # Main application configuration
+├── application-dev.yml       # Development profile overrides
 ├── db/migration/             # Flyway database migrations
-└── logback-spring.xml        # Logging configuration
+├── graphql/                  # GraphQL schemas (if applicable)
+├── openapi/                  # OpenAPI/Swagger specifications
+│   └── aequitas-api.yaml     # REST API specification
+├── logback-spring.xml        # Logging configuration
+├── static/                   # Static web resources
+└── templates/                # Template files (e.g., email templates)
 ```
 
 ### Data Flow
