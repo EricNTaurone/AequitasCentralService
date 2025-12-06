@@ -45,7 +45,7 @@ class GlobalExceptionHandlerTest {
 
         // THEN
         assertThat(result).isNotNull();
-        assertThat(result.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT.value());
         assertThat(result.getTitle()).isEqualTo("VALIDATION");
         assertThat(result.getProperties()).isNotNull();
         
@@ -73,7 +73,7 @@ class GlobalExceptionHandlerTest {
 
         // THEN
         assertThat(result).isNotNull();
-        assertThat(result.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT.value());
         assertThat(result.getTitle()).isEqualTo("VALIDATION");
         
         @SuppressWarnings("unchecked")
@@ -98,7 +98,7 @@ class GlobalExceptionHandlerTest {
 
         // THEN
         assertThat(result).isNotNull();
-        assertThat(result.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY.value());
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT.value());
         assertThat(result.getTitle()).isEqualTo("VALIDATION");
         
         @SuppressWarnings("unchecked")

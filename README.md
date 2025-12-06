@@ -36,8 +36,10 @@ Aequitas Central Service is a production-ready Spring Boot application that prov
 ### Core Capabilities
 
 - **Multi-Tenant Architecture**: Complete firm isolation with PostgreSQL row-level security (RLS)
+- **User Registration & Authentication**: Self-service user signup with firm association and JWT token-based authentication
 - **Role-Based Access Control (RBAC)**: Three-tier permission model (Employee, Manager, Admin)
 - **Time Entry Management**: Full lifecycle support from creation through approval
+- **Firm Management**: Complete CRUD operations for managing law firm profiles and settings
 - **Idempotent Operations**: Guarantee exactly-once semantics with retry protection
 - **Event-Driven Integration**: Transactional outbox pattern for reliable event publishing
 - **OAuth2/JWT Authentication**: Secure token-based authentication with claim propagation
@@ -106,6 +108,33 @@ src/main/resources/
                                                                 ↓
                                               [PostgreSQL with RLS Policies]
 ```
+
+### Authentication Flow
+
+Aequitas Central Service integrates with Supabase for user authentication and session management:
+
+1. **User Registration** (`/api/v1/auth/signup`):
+   - Client submits email, password, firm ID, and desired role
+   - Service validates firm existence and creates Supabase user account
+   - User profile is stored with firm association and role assignment
+   - Supabase returns session tokens (access + refresh)
+
+2. **User Authentication** (`/api/v1/auth/signin`):
+   - Client submits email and password credentials
+   - Service validates credentials against Supabase
+   - On success, returns fresh JWT tokens with embedded claims
+   - Tokens include: `sub` (user ID), `firm_id` (tenant), `role` (RBAC)
+
+3. **Authenticated Requests**:
+   - Client includes JWT in `Authorization: Bearer <token>` header
+   - `TenantContextFilter` extracts and validates token claims
+   - Tenant context propagates through request lifecycle
+   - PostgreSQL RLS policies enforce data isolation based on `firm_id`
+
+4. **Token Refresh**:
+   - Clients use refresh token to obtain new access tokens
+   - Access tokens expire after configured duration (default: 1 hour)
+   - Refresh tokens have longer validity (default: 7 days)
 
 ---
 
@@ -204,6 +233,14 @@ The application supports configuration via environment variables or Spring profi
 | `SECURITY_JWT_SECRET` | HMAC secret for JWT validation | `change-me-in-prod` | Yes |
 | `SPRING_PROFILES_ACTIVE` | Active Spring profile | `dev` | No |
 
+#### Authentication Configuration
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `SUPABASE_URL` | Supabase project URL | - | Yes |
+| `SUPABASE_KEY` | Supabase anonymous/public key | - | Yes |
+| `SUPABASE_JWT_SECRET` | Supabase JWT secret for token verification | Same as `SECURITY_JWT_SECRET` | Yes |
+
 #### JWT Configuration
 
 Tokens must include the following claims:
@@ -251,11 +288,72 @@ Flyway migrations automatically run on application startup. The baseline migrati
 
 ### Basic Workflow
 
-1. **Authenticate and obtain JWT token**
-2. **Create a time entry** (Employee role)
-3. **Submit for approval** (Employee role)
-4. **Approve time entry** (Manager or Admin role)
-5. **Query approved entries**
+1. **Register a new user account** (if needed)
+2. **Authenticate and obtain JWT token**
+3. **Create a time entry** (Employee role)
+4. **Submit for approval** (Employee role)
+5. **Approve time entry** (Manager or Admin role)
+6. **Query approved entries**
+
+### Example: User Registration
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firmId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "email": "john.doe@lawfirm.com",
+    "password": "SecurePass123!",
+    "role": "EMPLOYEE"
+  }'
+```
+
+Response:
+```json
+{
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "john.doe@lawfirm.com",
+    "firmId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "role": "EMPLOYEE"
+  },
+  "tokens": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 3600,
+    "tokenType": "bearer"
+  }
+}
+```
+
+### Example: User Authentication
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@lawfirm.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+Response:
+```json
+{
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "john.doe@lawfirm.com",
+    "firmId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "role": "EMPLOYEE"
+  },
+  "tokens": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 3600,
+    "tokenType": "bearer"
+  }
+}
+```
 
 ### Example: Create Time Entry
 
@@ -318,6 +416,53 @@ curl -X PATCH http://localhost:8080/api/v1/users/{userId}/role \
   -d '{"role": "MANAGER"}'
 ```
 
+### Example: Firm Management
+
+```bash
+# Get current user's firm
+curl http://localhost:8080/api/v1/firms/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Get specific firm by ID (Admin only)
+curl http://localhost:8080/api/v1/firms/f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+
+# List all firms with pagination (Admin only)
+curl "http://localhost:8080/api/v1/firms?limit=20&cursor=eyJpZCI6IjEyMyJ9" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+
+# Create a new firm (System Admin only)
+curl -X POST http://localhost:8080/api/v1/firms \
+  -H "Authorization: Bearer SYSTEM_ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: create-firm-$(uuidgen)" \
+  -d '{
+    "name": "Smith & Associates Law Firm",
+    "address": {
+      "street": "123 Main Street",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10001",
+      "country": "USA"
+    }
+  }'
+
+# Update firm details (Admin only)
+curl -X PATCH http://localhost:8080/api/v1/firms/f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Smith & Partners LLP",
+    "address": {
+      "street": "456 Park Avenue",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10022",
+      "country": "USA"
+    }
+  }'
+```
+
 ---
 
 ## API Documentation
@@ -338,6 +483,13 @@ http://localhost:8080/v3/api-docs
 
 ### Core Endpoints
 
+#### Authentication
+
+| Method | Endpoint | Description | Required Role |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/auth/signup` | Register a new user with firm association | None (Public) |
+| `POST` | `/api/v1/auth/signin` | Authenticate user and obtain JWT tokens | None (Public) |
+
 #### Time Entries
 
 | Method | Endpoint | Description | Required Role |
@@ -356,6 +508,16 @@ http://localhost:8080/v3/api-docs
 | `GET` | `/api/v1/users/me` | Get current user profile | EMPLOYEE |
 | `GET` | `/api/v1/users` | List firm users | MANAGER, ADMIN |
 | `PATCH` | `/api/v1/users/{id}/role` | Update user role | ADMIN |
+
+#### Firm Management
+
+| Method | Endpoint | Description | Required Role |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/v1/firms/me` | Get current user's firm information | EMPLOYEE |
+| `GET` | `/api/v1/firms/{id}` | Get specific firm by ID | ADMIN |
+| `GET` | `/api/v1/firms` | List all firms (paginated) | ADMIN |
+| `POST` | `/api/v1/firms` | Create a new firm | SYSTEM_ADMIN |
+| `PATCH` | `/api/v1/firms/{id}` | Update firm details | ADMIN |
 
 ### Idempotency
 
@@ -507,16 +669,27 @@ docker compose up -d
 Production environment variables:
 
 ```bash
+# Database Configuration
 export SPRING_DATASOURCE_URL=jdbc:postgresql://prod-db:5432/aequitas
 export SPRING_DATASOURCE_USERNAME=prod_user
 export SPRING_DATASOURCE_PASSWORD=secure_password
+
+# Security Configuration
 export SECURITY_JWT_SECRET=production-secret-min-32-chars
+
+# Supabase Authentication
+export SUPABASE_URL=https://your-project.supabase.co
+export SUPABASE_KEY=your-supabase-anon-key
+export SUPABASE_JWT_SECRET=your-supabase-jwt-secret
+
+# Application Profile
 export SPRING_PROFILES_ACTIVE=prod
 ```
 
 ### Production Checklist
 
 - [ ] Set secure `SECURITY_JWT_SECRET` (minimum 32 characters)
+- [ ] Configure Supabase project with production credentials
 - [ ] Configure production database with SSL
 - [ ] Enable HTTPS/TLS termination at load balancer
 - [ ] Configure log aggregation (ELK, Splunk, CloudWatch)
@@ -526,6 +699,8 @@ export SPRING_PROFILES_ACTIVE=prod
 - [ ] Set appropriate JVM heap size (`-Xmx`, `-Xms`)
 - [ ] Configure health check endpoints in orchestrator
 - [ ] Set up alerts for critical metrics
+- [ ] Configure rate limiting for authentication endpoints
+- [ ] Set up email verification for user registration (Supabase)
 
 ### Health Checks
 
@@ -650,6 +825,34 @@ Correlation IDs propagate across service boundaries via `X-Correlation-Id` heade
 - Verify JWT secret matches between token generation and application config
 - Use `@WithMockJwt` annotation in tests
 - Check token expiration and required claims (`sub`, `firm_id`, `role`)
+
+#### Issue: User registration fails with 404 Firm not found
+
+**Symptom**: POST to `/api/v1/auth/signup` returns 404 error
+
+**Resolution**:
+- Ensure the `firmId` in the signup request corresponds to an existing firm
+- Create the firm first using the `/api/v1/firms` endpoint (requires SYSTEM_ADMIN role)
+- Verify the firm UUID is correctly formatted
+
+#### Issue: Authentication fails with 409 User already exists
+
+**Symptom**: POST to `/api/v1/auth/signup` returns 409 conflict error
+
+**Resolution**:
+- The email address is already registered in the system
+- Use `/api/v1/auth/signin` to authenticate with existing credentials
+- If password is forgotten, implement password reset flow through Supabase
+
+#### Issue: Invalid token claims or missing role
+
+**Symptom**: JWT token is valid but authorization fails for specific endpoints
+
+**Resolution**:
+- Verify the JWT token includes all required claims: `sub`, `firm_id`, and `role`
+- Check that the `role` value matches one of: `EMPLOYEE`, `MANAGER`, `ADMIN`
+- Ensure the user's role assignment in the database matches the token claims
+- Re-authenticate to obtain a fresh token with updated claims
 
 #### Issue: Docker container fails health checks
 

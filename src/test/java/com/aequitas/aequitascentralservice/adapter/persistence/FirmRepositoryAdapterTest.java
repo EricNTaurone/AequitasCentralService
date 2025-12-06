@@ -46,7 +46,6 @@ class FirmRepositoryAdapterTest {
     private FirmRepositoryAdapter adapter;
 
     // ==================== save() Tests ====================
-
     @Test
     void GIVEN_validFirm_WHEN_save_THEN_savesAndReturnsDomain() {
         try (final MockedStatic<FirmMapper> mapperMock = mockStatic(FirmMapper.class)) {
@@ -105,7 +104,6 @@ class FirmRepositoryAdapterTest {
     }
 
     // ==================== findById() Tests ====================
-
     @Test
     void GIVEN_existingFirm_WHEN_findById_THEN_returnsFirm() {
         try (final MockedStatic<FirmMapper> mapperMock = mockStatic(FirmMapper.class)) {
@@ -147,29 +145,26 @@ class FirmRepositoryAdapterTest {
     }
 
     // ==================== list() Tests ====================
-
     @Test
     void GIVEN_emptyDatabase_WHEN_list_THEN_returnsEmptyPage() {
-        try (final MockedStatic<FirmMapper> mapperMock = mockStatic(FirmMapper.class)) {
-            // GIVEN
-            final PageRequest pageRequest = new PageRequest(20, null);
-            final List<FirmEntity> entities = List.of();
-            final Page<FirmEntity> page = new PageImpl<>(entities);
+        // GIVEN
+        final PageRequest pageRequest = new PageRequest(20, null);
+        final List<FirmEntity> entities = List.of();
+        final Page<FirmEntity> page = new PageImpl<>(entities);
 
-            when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-            // WHEN
-            final PageResult<Firm> result = adapter.list(pageRequest);
+        // WHEN
+        final PageResult<Firm> result = adapter.list(pageRequest);
 
-            // THEN
-            assertThat(result).isNotNull();
-            assertThat(result.items()).isEmpty();
-            assertThat(result.hasMore()).isFalse();
-            assertThat(result.nextCursor()).isNull();
+        // THEN
+        assertThat(result).isNotNull();
+        assertThat(result.items()).isEmpty();
+        assertThat(result.hasMore()).isFalse();
+        assertThat(result.nextCursor()).isNull();
 
-            verify(repository).findAll(any(Specification.class), any(Pageable.class));
-            verifyNoMoreInteractions(repository);
-        }
+        verify(repository).findAll(any(Specification.class), any(Pageable.class));
+        verifyNoMoreInteractions(repository);
     }
 
     @Test
@@ -267,7 +262,6 @@ class FirmRepositoryAdapterTest {
     }
 
     // ==================== Helper Methods ====================
-
     private Firm createFirm(final UUID id) {
         return Firm.builder()
                 .id(id)
