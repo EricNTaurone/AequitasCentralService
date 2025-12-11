@@ -36,7 +36,7 @@ class UserProfileDtoMapperTest {
     void GIVEN_userProfileWithEmployeeRole_WHEN_toResponse_THEN_returnsUserProfileResponseWithAllFieldsMapped() {
         // GIVEN
         final UserProfile profile =
-                new UserProfile(USER_ID, FIRM_ID, EMAIL, com.aequitas.aequitascentralservice.domain.value.Role.EMPLOYEE);
+                new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, EMAIL, com.aequitas.aequitascentralservice.domain.value.Role.EMPLOYEE);
 
         // WHEN
         final UserProfileResponse response = UserProfileDtoMapper.toResponse(profile);
@@ -53,7 +53,7 @@ class UserProfileDtoMapperTest {
     void GIVEN_userProfileWithManagerRole_WHEN_toResponse_THEN_returnsResponseWithManagerRole() {
         // GIVEN
         final UserProfile profile =
-                new UserProfile(USER_ID, FIRM_ID, EMAIL, com.aequitas.aequitascentralservice.domain.value.Role.MANAGER);
+                new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, EMAIL, com.aequitas.aequitascentralservice.domain.value.Role.MANAGER);
 
         // WHEN
         final UserProfileResponse response = UserProfileDtoMapper.toResponse(profile);
@@ -67,7 +67,7 @@ class UserProfileDtoMapperTest {
     void GIVEN_userProfileWithAdminRole_WHEN_toResponse_THEN_returnsResponseWithAdminRole() {
         // GIVEN
         final UserProfile profile =
-                new UserProfile(USER_ID, FIRM_ID, EMAIL, com.aequitas.aequitascentralservice.domain.value.Role.ADMIN);
+                new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, EMAIL, com.aequitas.aequitascentralservice.domain.value.Role.ADMIN);
 
         // WHEN
         final UserProfileResponse response = UserProfileDtoMapper.toResponse(profile);
@@ -84,7 +84,7 @@ class UserProfileDtoMapperTest {
         final UUID firmId = UUID.randomUUID();
         final String email = "test@test.com";
         final UserProfile profile =
-                new UserProfile(userId, firmId, email, com.aequitas.aequitascentralservice.domain.value.Role.EMPLOYEE);
+                new UserProfile(userId, UUID.randomUUID(), firmId, email, com.aequitas.aequitascentralservice.domain.value.Role.EMPLOYEE);
 
         // WHEN
         final UserProfileResponse response = UserProfileDtoMapper.toResponse(profile);
@@ -100,11 +100,11 @@ class UserProfileDtoMapperTest {
     void GIVEN_multipleProfilesWithDifferentRoles_WHEN_toResponse_THEN_correctlyMapsEachRole() {
         // GIVEN
         final UserProfile employee =
-                new UserProfile(USER_ID, FIRM_ID, "employee@example.com", com.aequitas.aequitascentralservice.domain.value.Role.EMPLOYEE);
+                new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, "employee@example.com", com.aequitas.aequitascentralservice.domain.value.Role.EMPLOYEE);
         final UserProfile manager =
-                new UserProfile(USER_ID, FIRM_ID, "manager@example.com", com.aequitas.aequitascentralservice.domain.value.Role.MANAGER);
+                new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, "manager@example.com", com.aequitas.aequitascentralservice.domain.value.Role.MANAGER);
         final UserProfile admin =
-                new UserProfile(USER_ID, FIRM_ID, "admin@example.com", com.aequitas.aequitascentralservice.domain.value.Role.ADMIN);
+                new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, "admin@example.com", com.aequitas.aequitascentralservice.domain.value.Role.ADMIN);
 
         // WHEN
         final UserProfileResponse employeeResponse = UserProfileDtoMapper.toResponse(employee);

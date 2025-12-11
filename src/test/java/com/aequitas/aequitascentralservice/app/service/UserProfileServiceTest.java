@@ -54,7 +54,7 @@ class UserProfileServiceTest {
     void GIVEN_currentUser_WHEN_me_THEN_returnCurrentUserProfile() {
         // GIVEN
         CurrentUser currentUser = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.ADMIN);
-        UserProfile expectedProfile = new UserProfile(TEST_USER_ID, TEST_FIRM_ID, TEST_EMAIL, Role.ADMIN);
+        UserProfile expectedProfile = new UserProfile(TEST_USER_ID, UUID.randomUUID(), TEST_FIRM_ID, TEST_EMAIL, Role.ADMIN);
         when(currentUserPort.currentUser()).thenReturn(currentUser);
         when(repositoryPort.findById(TEST_USER_ID, TEST_FIRM_ID))
                 .thenReturn(Optional.of(expectedProfile));
@@ -111,7 +111,7 @@ class UserProfileServiceTest {
     void GIVEN_adminUserWithoutRoleFilter_WHEN_list_THEN_returnAllProfiles() {
         // GIVEN
         CurrentUser admin = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.ADMIN);
-        UserProfile profile1 = new UserProfile(UUID.randomUUID(), TEST_FIRM_ID, TEST_EMAIL_3, Role.MANAGER);
+        UserProfile profile1 = new UserProfile(UUID.randomUUID(), UUID.randomUUID(), TEST_FIRM_ID, TEST_EMAIL_3, Role.MANAGER);
         List<UserProfile> profiles = List.of(profile1);
         when(currentUserPort.currentUser()).thenReturn(admin);
         when(repositoryPort.findByFirmId(TEST_FIRM_ID)).thenReturn(profiles);
@@ -132,7 +132,7 @@ class UserProfileServiceTest {
     void GIVEN_managerUserWithRoleFilter_WHEN_list_THEN_returnFilteredProfiles() {
         // GIVEN
         CurrentUser manager = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.MANAGER);
-        UserProfile profile1 = new UserProfile(UUID.randomUUID(), TEST_FIRM_ID, TEST_EMAIL_3, Role.EMPLOYEE);
+        UserProfile profile1 = new UserProfile(UUID.randomUUID(), UUID.randomUUID(), TEST_FIRM_ID, TEST_EMAIL_3, Role.EMPLOYEE);
         List<UserProfile> profiles = List.of(profile1);
         when(currentUserPort.currentUser()).thenReturn(manager);
         when(repositoryPort.findByFirmIdAndRole(TEST_FIRM_ID, Role.EMPLOYEE)).thenReturn(profiles);
@@ -191,7 +191,7 @@ class UserProfileServiceTest {
     void GIVEN_adminUserAndExistingProfile_WHEN_updateRole_THEN_persistUpdatedRole() {
         // GIVEN
         CurrentUser admin = new CurrentUser(TEST_USER_ID, TEST_FIRM_ID, Role.ADMIN);
-        UserProfile existing = new UserProfile(TEST_TARGET_USER_ID, TEST_FIRM_ID, TEST_EMAIL_2, Role.EMPLOYEE);
+        UserProfile existing = new UserProfile(TEST_TARGET_USER_ID, UUID.randomUUID(), TEST_FIRM_ID, TEST_EMAIL_2, Role.EMPLOYEE);
         when(currentUserPort.currentUser()).thenReturn(admin);
         when(repositoryPort.findById(TEST_TARGET_USER_ID, TEST_FIRM_ID))
                 .thenReturn(Optional.of(existing));

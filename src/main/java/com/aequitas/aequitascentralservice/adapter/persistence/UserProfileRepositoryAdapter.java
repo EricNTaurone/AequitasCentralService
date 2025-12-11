@@ -28,6 +28,11 @@ public class UserProfileRepositoryAdapter implements UserProfileRepositoryPort {
     }
 
     @Override
+    public Optional<UserProfile> findByAuthenticationId(final UUID authenticationId) {
+        return repository.findByAuthenticationId(authenticationId).map(UserProfileMapper::toDomain);
+    }
+
+    @Override
     public List<UserProfile> findByFirmId(final UUID firmId) {
         return repository.findByFirmId(firmId).stream().map(UserProfileMapper::toDomain).toList();
     }

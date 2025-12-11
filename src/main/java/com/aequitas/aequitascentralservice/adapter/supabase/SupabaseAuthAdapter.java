@@ -3,6 +3,8 @@ package com.aequitas.aequitascentralservice.adapter.supabase;
 import java.util.Map;
 import java.util.UUID;
 
+import com.aequitas.aequitascentralservice.app.service.UserProfileService;
+import com.aequitas.aequitascentralservice.domain.model.UserProfile;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -30,17 +32,19 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
 
     private final RestClient restClient;
     private final SupabaseProperties properties;
+    private final UserProfileService userProfileService;
 
-    public SupabaseAuthAdapter(final RestClient supabaseRestClient, final SupabaseProperties properties) {
+    public SupabaseAuthAdapter(final RestClient supabaseRestClient, final SupabaseProperties properties, final UserProfileService userProfileService) {
         if (!StringUtils.hasText(properties.serviceKey())) {
             throw new IllegalStateException("Supabase service key must be configured");
         }
         if (!StringUtils.hasText(properties.url())) {
             throw new IllegalStateException("Supabase base URL must be configured");
         }
-        
+
         this.restClient = supabaseRestClient;
         this.properties = properties;
+        this.userProfileService = userProfileService;
     }
 
     @Override
@@ -57,7 +61,8 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
             if (response == null) {
                 throw new IllegalStateException("Supabase create user returned no payload");
             }
-            return toDomainUser(response, command.role());
+            final UserProfile profile = createUserProfile(response, command);
+            return toDomainUser(response, profile);
         } catch (RestClientResponseException ex) {
             throw translate("create Supabase user", ex);
         }
@@ -77,7 +82,8 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
             if (response == null || response.user() == null) {
                 throw new IllegalStateException("Supabase sign-in did not return a user");
             }
-            final SupabaseUser user = toDomainUser(response.user(), null);
+            final UserProfile profile = findUserProfile(UUID.fromString(response.user().id()));
+            final SupabaseUser user = toDomainUser(response.user(), profile);
             final AuthTokens tokens
                     = new AuthTokens(response.accessToken(), response.refreshToken(), response.expiresIn(), response.tokenType());
             return new SupabaseAuthSession(user, tokens);
@@ -86,68 +92,22 @@ public class SupabaseAuthAdapter implements SupabaseAuthPort {
         }
     }
 
-    private SupabaseUser toDomainUser(final SupabaseUserResponse response, final Role fallbackRole) {
-        final UUID id = UUID.fromString(response.id());
-        final UUID firmId = resolveFirmId(response);
-        final Role role = resolveRole(response, fallbackRole);
-        return new SupabaseUser(id, firmId, response.email(), role);
+    private UserProfile createUserProfile(final SupabaseUserResponse user, final SignUpCommand command) {
+        return userProfileService.createUserProfile(UserProfile.builder()
+                .email(user.email())
+                .firmId(command.firmId())
+                .role(command.role())
+                .authenticationId(UUID.fromString(user.id()))
+                .build());
     }
 
-    private UUID resolveFirmId(final SupabaseUserResponse response) {
-        final UUID fromUserMetadata = parseUuid(response.userMetadata(), "firm_id");
-        if (fromUserMetadata != null) {
-            return fromUserMetadata;
-        }
-        final UUID fromAppMetadata = parseUuid(response.appMetadata(), "firm_id");
-        if (fromAppMetadata != null) {
-            return fromAppMetadata;
-        }
-        final String direct = response.firmId();
-        if (StringUtils.hasText(direct)) {
-            return UUID.fromString(direct);
-        }
-        throw new IllegalStateException("Supabase user is missing firm_id metadata");
+    private UserProfile findUserProfile(final UUID authenticationId) {
+        return userProfileService.findByAuthenticationId(authenticationId);
     }
 
-    private Role resolveRole(final SupabaseUserResponse response, final Role fallbackRole) {
-        final String roleFromUserMetadata = parseString(response.userMetadata(), "role");
-        if (StringUtils.hasText(roleFromUserMetadata)) {
-            return Role.valueOf(roleFromUserMetadata.trim().toUpperCase());
-        }
-        final String roleFromAppMetadata = parseString(response.appMetadata(), "role");
-        if (StringUtils.hasText(roleFromAppMetadata)) {
-            return Role.valueOf(roleFromAppMetadata.trim().toUpperCase());
-        }
-        if (StringUtils.hasText(response.role())) {
-            try {
-                return Role.valueOf(response.role().trim().toUpperCase());
-            } catch (IllegalArgumentException ignored) {
-                // fall through to fallback
-            }
-        }
-        if (fallbackRole != null) {
-            return fallbackRole;
-        }
-        throw new IllegalStateException("Supabase user is missing role metadata");
-    }
-
-    private UUID parseUuid(final Map<String, Object> map, final String key) {
-        if (map == null) {
-            return null;
-        }
-        final Object value = map.get(key);
-        if (value == null) {
-            return null;
-        }
-        return UUID.fromString(String.valueOf(value));
-    }
-
-    private String parseString(final Map<String, Object> map, final String key) {
-        if (map == null) {
-            return null;
-        }
-        final Object value = map.get(key);
-        return value == null ? null : String.valueOf(value);
+    private SupabaseUser toDomainUser(final SupabaseUserResponse response, final UserProfile profile) {
+        final UUID authenticationId = UUID.fromString(response.id());
+        return new SupabaseUser(authenticationId, profile.id(), profile.firmId(), response.email(), profile.role());
     }
 
     private IllegalStateException translate(final String action, final RestClientResponseException ex) {

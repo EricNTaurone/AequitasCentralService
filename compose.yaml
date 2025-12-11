@@ -34,6 +34,7 @@ services:
             - ./config/docker/constants/${ENVIRONMENT}.env
         ports:
             - "8080:8080"
+            - "5005:5005"
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
             interval: 15s

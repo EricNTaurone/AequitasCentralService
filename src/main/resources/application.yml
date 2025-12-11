@@ -45,7 +45,7 @@ logging:
         "[com.aequitas.aequitascentralservice]": INFO
         "[org.hibernate.sql]": WARN
 supabase:
-    url: ${SUPABASE_URL:https://example.supabase.co}
+    url: ${SUPABASE_URL:https://supabase:example.supabase.co}
     service-key: ${SUPABASE_SERVICE_KEY:dev-service-key}
     auth:
         jwk-set-uri: ${SUPABASE_JWK_SET_URI:${supabase.url}/auth/v1/keys}

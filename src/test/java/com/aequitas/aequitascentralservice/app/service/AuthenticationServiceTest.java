@@ -31,7 +31,8 @@ import com.aequitas.aequitascentralservice.domain.value.Role;
 class AuthenticationServiceTest {
 
     private static final UUID FIRM_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    private static final UUID USER_ID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static final UUID AUTH_ID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static final UUID DOMAIN_ID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final String EMAIL = "user@example.com";
     private static final String PASSWORD = "password123";
 
@@ -59,9 +60,11 @@ class AuthenticationServiceTest {
     @BeforeEach
     void setUp() {
         tokens = new AuthTokens("access", "refresh", 3600, "bearer");
-        supabaseUser = new SupabaseUser(USER_ID, FIRM_ID, EMAIL, Role.ADMIN);
+        // SupabaseUser: (authId, domainId, firmId, email, role)
+        supabaseUser = new SupabaseUser(AUTH_ID, DOMAIN_ID, FIRM_ID, EMAIL, Role.ADMIN);
         supabaseAuthSession = new SupabaseAuthSession(supabaseUser, tokens);
-        expectedProfile = new UserProfile(USER_ID, FIRM_ID, EMAIL, Role.ADMIN);
+        // UserProfile: (id=domainId, authenticationId=authId, firmId, email, role)
+        expectedProfile = new UserProfile(DOMAIN_ID, AUTH_ID, FIRM_ID, EMAIL, Role.ADMIN);
     }
 
     @Test
@@ -69,15 +72,19 @@ class AuthenticationServiceTest {
         // GIVEN
         SignUpCommand command = new SignUpCommand(FIRM_ID, EMAIL, PASSWORD, Role.ADMIN);
         
-        // Create a createdUser with one set of attributes
-        UUID createdUserId = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
-        SupabaseUser createdUser = new SupabaseUser(createdUserId, FIRM_ID, "created@example.com", Role.MANAGER);
+        // Create a createdUser with one set of attributes (different from session user)
+        UUID createdAuthId = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        UUID createdDomainId = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        SupabaseUser createdUser = new SupabaseUser(createdAuthId, createdDomainId, FIRM_ID, "created@example.com", Role.MANAGER);
         
         // Session user has DIFFERENT attributes - this is what should be used when session.user() != null
-        SupabaseUser sessionUser = new SupabaseUser(USER_ID, FIRM_ID, EMAIL, Role.ADMIN);
+        UUID sessionAuthId = UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff");
+        UUID sessionDomainId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        SupabaseUser sessionUser = new SupabaseUser(sessionAuthId, sessionDomainId, FIRM_ID, EMAIL, Role.ADMIN);
         SupabaseAuthSession session = new SupabaseAuthSession(sessionUser, tokens);
         
-        UserProfile expectedSessionProfile = new UserProfile(USER_ID, FIRM_ID, EMAIL, Role.ADMIN);
+        // Expected profile uses sessionUser's domainId as id, and sessionUser's authId as authenticationId
+        UserProfile expectedSessionProfile = new UserProfile(sessionDomainId, sessionAuthId, FIRM_ID, EMAIL, Role.ADMIN);
         
         when(supabaseAuthPort.createUser(command)).thenReturn(createdUser);
         when(supabaseAuthPort.signIn(any(SignInCommand.class))).thenReturn(session);
@@ -102,11 +109,14 @@ class AuthenticationServiceTest {
         assertThat(capturedSignIn.password()).isEqualTo(PASSWORD);
 
         // CRITICAL: Verify the UserProfile was created from session.user() (NOT createdUser)
-        // This kills the mutation that replaces the != null check with false
+        // UserProfile.id = SupabaseUser.domainId, UserProfile.authenticationId = SupabaseUser.id
         UserProfile capturedProfile = userProfileCaptor.getValue();
         assertThat(capturedProfile.id())
-                .as("Should use session.user() ID when it is not null")
-                .isEqualTo(USER_ID);  // From sessionUser, NOT createdUserId
+                .as("Should use session.user().domainId() as profile id when session.user() is not null")
+                .isEqualTo(sessionDomainId);  // From sessionUser.domainId(), NOT createdDomainId
+        assertThat(capturedProfile.authenticationId())
+                .as("Should use session.user().id() as authenticationId when session.user() is not null")
+                .isEqualTo(sessionAuthId);  // From sessionUser.id(), NOT createdAuthId
         assertThat(capturedProfile.email())
                 .as("Should use session.user() email when it is not null")
                 .isEqualTo(EMAIL);  // From sessionUser, NOT "created@example.com"
@@ -120,14 +130,16 @@ class AuthenticationServiceTest {
         // GIVEN
         SignUpCommand command = new SignUpCommand(FIRM_ID, EMAIL, PASSWORD, Role.ADMIN);
         
-        // Create a createdUser with specific attributes different from the session user
-        UUID createdUserId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-        SupabaseUser createdUser = new SupabaseUser(createdUserId, FIRM_ID, "created@example.com", Role.EMPLOYEE);
+        // Create a createdUser with specific attributes
+        UUID createdAuthId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        UUID createdDomainId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        SupabaseUser createdUser = new SupabaseUser(createdAuthId, createdDomainId, FIRM_ID, "created@example.com", Role.EMPLOYEE);
         
         // Session returns null user - should fall back to createdUser
         SupabaseAuthSession sessionWithNullUser = new SupabaseAuthSession(null, tokens);
         
-        UserProfile expectedCreatedProfile = new UserProfile(createdUserId, FIRM_ID, "created@example.com", Role.EMPLOYEE);
+        // Expected profile uses createdUser's domainId as id, and createdUser's authId as authenticationId
+        UserProfile expectedCreatedProfile = new UserProfile(createdDomainId, createdAuthId, FIRM_ID, "created@example.com", Role.EMPLOYEE);
         
         when(supabaseAuthPort.createUser(command)).thenReturn(createdUser);
         when(supabaseAuthPort.signIn(any(SignInCommand.class))).thenReturn(sessionWithNullUser);
@@ -147,11 +159,14 @@ class AuthenticationServiceTest {
         verifyNoMoreInteractions(supabaseAuthPort, userProfileRepositoryPort);
 
         // CRITICAL: Verify the profile was created from the createdUser (not session.user())
-        // This kills the mutation that replaces the != null check with false
+        // UserProfile.id = SupabaseUser.domainId, UserProfile.authenticationId = SupabaseUser.id
         UserProfile capturedProfile = userProfileCaptor.getValue();
         assertThat(capturedProfile.id())
-                .as("Should use createdUser ID when session.user() is null")
-                .isEqualTo(createdUserId);
+                .as("Should use createdUser.domainId() as profile id when session.user() is null")
+                .isEqualTo(createdDomainId);
+        assertThat(capturedProfile.authenticationId())
+                .as("Should use createdUser.id() as authenticationId when session.user() is null")
+                .isEqualTo(createdAuthId);
         assertThat(capturedProfile.email())
                 .as("Should use createdUser email when session.user() is null")
                 .isEqualTo("created@example.com");
@@ -179,9 +194,15 @@ class AuthenticationServiceTest {
         verify(userProfileRepositoryPort).save(userProfileCaptor.capture());
         verifyNoMoreInteractions(supabaseAuthPort, userProfileRepositoryPort);
 
-        // Verify the UserProfile was created with correct data from session user
+        // Verify the UserProfile was created with correct mapping from session user
+        // UserProfile.id = SupabaseUser.domainId, UserProfile.authenticationId = SupabaseUser.id
         UserProfile capturedProfile = userProfileCaptor.getValue();
-        assertThat(capturedProfile.id()).isEqualTo(USER_ID);
+        assertThat(capturedProfile.id())
+                .as("UserProfile.id should be SupabaseUser.domainId()")
+                .isEqualTo(DOMAIN_ID);
+        assertThat(capturedProfile.authenticationId())
+                .as("UserProfile.authenticationId should be SupabaseUser.id()")
+                .isEqualTo(AUTH_ID);
         assertThat(capturedProfile.firmId()).isEqualTo(FIRM_ID);
         assertThat(capturedProfile.email()).isEqualTo(EMAIL);
         assertThat(capturedProfile.role()).isEqualTo(Role.ADMIN);

@@ -8,6 +8,7 @@ import com.aequitas.aequitascentralservice.adapter.persistence.embeddable.Addres
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,7 @@ public class FirmEntity {
     public static final String UPDATED_AT = "updated_at";
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     @Column(name = NAME, nullable = false, length = 255)

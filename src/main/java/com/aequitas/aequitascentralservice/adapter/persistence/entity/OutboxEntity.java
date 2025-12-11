@@ -11,6 +11,7 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Builder;
@@ -36,6 +37,7 @@ public class OutboxEntity {
     public static final String PUBLISHED_AT = "published_at";
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     @Column(name = FIRM_ID, nullable = false)

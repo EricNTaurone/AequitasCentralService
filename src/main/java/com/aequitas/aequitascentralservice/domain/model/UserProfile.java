@@ -15,5 +15,5 @@ import lombok.Builder;
  * @param role assigned role for RBAC decisions.
  */
 @Builder
-public record UserProfile(UUID id, UUID firmId, String email, Role role) {
+public record UserProfile(UUID id, UUID authenticationId, UUID firmId, String email, Role role) {
 }

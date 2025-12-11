@@ -14,6 +14,8 @@ public interface UserProfileJpaRepository extends JpaRepository<UserProfileEntit
 
     Optional<UserProfileEntity> findByIdAndFirmId(UUID id, UUID firmId);
 
+    Optional<UserProfileEntity> findByAuthenticationId(UUID authenticationId);
+
     List<UserProfileEntity> findByFirmId(UUID firmId);
 
     List<UserProfileEntity> findByFirmIdAndRole(UUID firmId, Role role);

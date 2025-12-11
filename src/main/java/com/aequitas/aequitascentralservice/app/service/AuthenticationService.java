@@ -49,7 +49,7 @@ public class AuthenticationService implements AuthenticationCommandPort {
     }
 
     private UserProfile persistProfile(final SupabaseUser user) {
-        final UserProfile profile = new UserProfile(user.id(), user.firmId(), user.email(), user.role());
+        final UserProfile profile = new UserProfile(user.domainId(), user.id(), user.firmId(), user.email(), user.role());
         return userProfileRepositoryPort.save(profile);
     }
 }

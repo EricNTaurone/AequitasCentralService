@@ -1,4 +1,5 @@
-#!/usr/bin/env sh
+#!/bin/bash
 set -euo pipefail
 
-exec java ${JAVA_OPTS:-} -jar /app/app.jar
+# Enable JVM debug if JAVA_DEBUG_OPTS is set (typically in dev environment)
+exec java ${JAVA_OPTS:-} ${JAVA_DEBUG_OPTS:-} -jar /app/app.jar

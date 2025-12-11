@@ -15,5 +15,10 @@ public enum Role {
     /**
      * Firm administrator with full access inside the tenant.
      */
-    ADMIN
+    ADMIN,
+    
+    /**
+     * System administrator with access across all tenants.
+     */
+    SUPER_ADMIN
 }

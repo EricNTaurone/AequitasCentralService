@@ -2,6 +2,7 @@ package com.aequitas.aequitascentralservice.adapter.persistence.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class CustomerEntity {
     public static final String CREATED_AT = "created_at";
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     @Column(name = FIRM_ID, nullable = false)

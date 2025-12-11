@@ -1,0 +1,845 @@
+{
+  "info": {
+    "_postman_id": "4af0d9b1-2eb6-4f60-8a5c-97e5a4b52b15",
+    "name": "Aequitas Central Service API Tests",
+    "description": "Regression-oriented Postman collection covering all public endpoints described in aequitas-api.yaml. Requests are sequenced to reuse captured IDs and tokens, so you can run the full collection for a smoke test after updating the variables to match your environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "signupEmail",
+      "value": "{{$randomEmail}}"
+    },
+    {
+      "key": "password",
+      "value": "SecurePass123!"
+    },
+    {
+      "key": "firmId",
+      "value": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    },
+    {
+      "key": "customerId",
+      "value": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "key": "projectId",
+      "value": "660e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      "key": "matterId",
+      "value": "770e8400-e29b-41d4-a716-446655440002"
+    },
+    {
+      "key": "role",
+      "value": "ADMIN"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "timeEntryId",
+      "value": ""
+    },
+    {
+      "key": "createdFirmId",
+      "value": ""
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "{{$guid}}"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - Sign Up",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firmId\": \"{{firmId}}\",\n  \"email\": \"{{signupEmail}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"{{role}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "signup"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Has user and tokens\", function () {",
+              "    pm.expect(json).to.have.property(\"user\");",
+              "    pm.expect(json.user).to.include.all.keys(\"id\", \"firmId\", \"email\", \"role\");",
+              "    pm.expect(json).to.have.property(\"tokens\");",
+              "    pm.expect(json.tokens).to.include.all.keys(\"accessToken\", \"refreshToken\", \"expiresInSeconds\", \"tokenType\");",
+              "});",
+              "",
+              "pm.collectionVariables.set(\"userId\", json.user.id);",
+              "pm.collectionVariables.set(\"firmId\", json.user.firmId || pm.collectionVariables.get(\"firmId\"));",
+              "pm.collectionVariables.set(\"accessToken\", json.tokens.accessToken);",
+              "pm.collectionVariables.set(\"refreshToken\", json.tokens.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Sign In",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{signupEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/signin",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "signin"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Has user and tokens\", function () {",
+              "    pm.expect(json).to.have.property(\"user\");",
+              "    pm.expect(json.user).to.include.all.keys(\"id\", \"firmId\", \"email\", \"role\");",
+              "    pm.expect(json).to.have.property(\"tokens\");",
+              "    pm.expect(json.tokens).to.include.all.keys(\"accessToken\", \"refreshToken\", \"expiresInSeconds\", \"tokenType\");",
+              "});",
+              "",
+              "pm.collectionVariables.set(\"userId\", json.user.id);",
+              "pm.collectionVariables.set(\"firmId\", json.user.firmId || pm.collectionVariables.get(\"firmId\"));",
+              "pm.collectionVariables.set(\"accessToken\", json.tokens.accessToken);",
+              "pm.collectionVariables.set(\"refreshToken\", json.tokens.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"projectId\": \"{{projectId}}\",\n  \"matterId\": \"{{matterId}}\",\n  \"narrative\": \"Reviewed contract terms and drafted amendments\",\n  \"durationMinutes\": 120\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entries",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "entries"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Has generated id\", function () {",
+              "    pm.expect(json).to.have.property(\"id\");",
+              "});",
+              "",
+              "pm.collectionVariables.set(\"timeEntryId\", json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries - Search",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entries?customerId={{customerId}}&projectId={{projectId}}&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "entries"
+          ],
+          "query": [
+            {
+              "key": "customerId",
+              "value": "{{customerId}}"
+            },
+            {
+              "key": "projectId",
+              "value": "{{projectId}}"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Has pagination shape\", function () {",
+              "    pm.expect(json).to.have.property(\"items\").that.is.an(\"array\");",
+              "    pm.expect(json).to.have.property(\"total\");",
+              "    pm.expect(json).to.have.property(\"hasMore\");",
+              "});",
+              "",
+              "if (json.items && json.items.length > 0 && json.items[0].id) {",
+              "    pm.collectionVariables.set(\"timeEntryId\", json.items[0].id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries - Get by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entries/{{timeEntryId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "entries",
+            "{{timeEntryId}}"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Entry has required fields\", function () {",
+              "    pm.expect(json).to.include.all.keys(\"id\", \"customerId\", \"projectId\", \"userId\", \"narrative\", \"durationMinutes\", \"status\", \"createdAt\", \"updatedAt\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries - Update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"narrative\": \"Updated contract review notes\",\n  \"durationMinutes\": 150\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entries/{{timeEntryId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "entries",
+            "{{timeEntryId}}"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries - Submit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entries/{{timeEntryId}}/submit",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "entries",
+            "{{timeEntryId}}",
+            "submit"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries - Approve",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/entries/{{timeEntryId}}/approve",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "entries",
+            "{{timeEntryId}}",
+            "approve"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Get Current Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "me"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Profile has expected fields\", function () {",
+              "    pm.expect(json).to.include.all.keys(\"id\", \"firmId\", \"email\", \"role\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - List Profiles",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users?role={{role}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users"
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "{{role}}"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Response is an array\", function () {",
+              "    pm.expect(json).to.be.an(\"array\");",
+              "});",
+              "",
+              "if (json.length > 0 && json[0].id) {",
+              "    pm.collectionVariables.set(\"userId\", json[0].id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Update Role",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"MANAGER\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users/{{userId}}/role",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "{{userId}}",
+            "role"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firms - Get Current User Firm",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/firms/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "firms",
+            "me"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Firm has expected fields\", function () {",
+              "    pm.expect(json).to.include.all.keys(\"id\", \"name\", \"address\", \"createdTime\", \"lastUpdateTime\");",
+              "});",
+              "",
+              "pm.collectionVariables.set(\"firmId\", json.id || pm.collectionVariables.get(\"firmId\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firms - Get by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/firms/{{firmId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "firms",
+            "{{firmId}}"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Firm has expected fields\", function () {",
+              "    pm.expect(json).to.include.all.keys(\"id\", \"name\", \"address\", \"createdTime\", \"lastUpdateTime\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firms - Update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Smith & Partners LLP\",\n  \"address\": {\n    \"street\": \"456 Broadway\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10013\",\n    \"country\": \"USA\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/firms/{{firmId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "firms",
+            "{{firmId}}"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firms - List",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/firms?limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "firms"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Has pagination shape\", function () {",
+              "    pm.expect(json).to.have.property(\"items\").that.is.an(\"array\");",
+              "    pm.expect(json).to.have.property(\"total\");",
+              "    pm.expect(json).to.have.property(\"hasMore\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Firms - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{$randomCompanyName}}\",\n  \"address\": {\n    \"street\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10001\",\n    \"country\": \"USA\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/firms",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "firms"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test(\"Has generated id\", function () {",
+              "    pm.expect(json).to.have.property(\"id\");",
+              "});",
+              "",
+              "pm.collectionVariables.set(\"createdFirmId\", json.id);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

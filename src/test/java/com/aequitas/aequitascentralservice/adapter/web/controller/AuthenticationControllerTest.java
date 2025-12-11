@@ -46,7 +46,7 @@ class AuthenticationControllerTest {
 
         AuthSession session = new AuthSession(
                 new UserProfile(
-                        USER_ID, FIRM_ID, EMAIL,
+                        USER_ID, UUID.randomUUID(), FIRM_ID, EMAIL,
                         com.aequitas.aequitascentralservice.domain.value.Role.ADMIN),
                 new AuthTokens("access", "refresh", 3600, "bearer"));
         when(authenticationCommandPort.signUp(any())).thenReturn(session);
@@ -69,7 +69,7 @@ class AuthenticationControllerTest {
 
         AuthSession session = new AuthSession(
                 new UserProfile(
-                        USER_ID, FIRM_ID, EMAIL,
+                        USER_ID, UUID.randomUUID(), FIRM_ID, EMAIL,
                         com.aequitas.aequitascentralservice.domain.value.Role.MANAGER),
                 new AuthTokens("access2", "refresh2", 1800, "bearer"));
         when(authenticationCommandPort.signIn(any())).thenReturn(session);

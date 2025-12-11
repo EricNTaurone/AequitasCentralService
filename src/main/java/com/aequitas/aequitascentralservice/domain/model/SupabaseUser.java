@@ -13,4 +13,4 @@ import lombok.Builder;
  * @param role domain role as persisted in Supabase metadata.
  */
 @Builder
-public record SupabaseUser(UUID id, UUID firmId, String email, Role role) {}
+public record SupabaseUser(UUID id, UUID domainId, UUID firmId, String email, Role role) {}

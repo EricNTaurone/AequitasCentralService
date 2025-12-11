@@ -124,6 +124,6 @@ class UserProfileControllerTest {
     }
 
     private UserProfile profile(final Role role) {
-        return new UserProfile(USER_ID, FIRM_ID, EMAIL, role);
+        return new UserProfile(USER_ID, UUID.randomUUID(), FIRM_ID, EMAIL, role);
     }
 }
